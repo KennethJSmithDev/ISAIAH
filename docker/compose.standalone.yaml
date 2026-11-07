@@ -14,6 +14,8 @@ services:
     volumes:
       - ./docker/trace-fixture:/opt/trace-fixture:ro
       - ./module.xml:/opt/isaiah/module.xml:ro
+      - ./LICENSE:/opt/isaiah/LICENSE:ro
+      - ./NOTICE.md:/opt/isaiah/NOTICE.md:ro
       - ./iris:/opt/isaiah/iris:ro
       - ./.local/zpm-0.10.10.xml:/opt/isaiah/zpm.xml:ro
     healthcheck:

@@ -8,6 +8,8 @@
       <Packaging>module</Packaging>
       <SourcesRoot>iris</SourcesRoot>
       <Resource Name="Isaiah.PKG"/>
+      <FileCopy Name="LICENSE" Target="${libdir}isaiah/LICENSE"/>
+      <FileCopy Name="NOTICE.md" Target="${libdir}isaiah/NOTICE.md"/>
       <SystemRequirements Version="&gt;=2026.3" Interoperability="enabled"/>
     </Module>
   </Document>

@@ -68,7 +68,7 @@ $null = New-Item -ItemType Directory -Path $runDir -Force
 $sourceTar = Join-Path $runDir 'source-input.tar'
 $candidate = Join-Path $runDir 'candidate.tgz'
 $archiveName = "isaiah-$version.tgz"
-git -C $repo archive --format=tar --output=$sourceTar $revision module.xml iris/cls/Isaiah
+git -C $repo archive --format=tar --output=$sourceTar $revision module.xml LICENSE NOTICE.md iris/cls/Isaiah
 if ($LASTEXITCODE -ne 0) { throw 'Could not stage the committed IPM inputs.' }
 Write-Host "Qualification records: $runDir"
 
@@ -140,9 +140,9 @@ Remove-Item -LiteralPath $sourceTar
 $files = @(tar -tzf $candidate | ForEach-Object { $_.TrimEnd('/') } |
     Where-Object { $_ -notin @('iris', 'iris/cls', 'iris/cls/Isaiah') })
 if ($LASTEXITCODE -ne 0) { throw 'Could not list the IPM archive.' }
-$expectedFiles = @('module.xml') + @(git -C $repo ls-tree -r --name-only $revision -- iris/cls/Isaiah)
+$expectedFiles = @('module.xml', 'LICENSE', 'NOTICE.md') + @(git -C $repo ls-tree -r --name-only $revision -- iris/cls/Isaiah)
 if ($LASTEXITCODE -ne 0 -or (Compare-Object $expectedFiles $files -CaseSensitive)) {
-    throw 'The archive files differ from the committed module and class set.'
+    throw 'The archive files differ from the committed module, class and notice set.'
 }
 $exported = [xml]((tar -xOzf $candidate module.xml) -join "`n")
 $exportedModule = $exported.Export.Document.Module
