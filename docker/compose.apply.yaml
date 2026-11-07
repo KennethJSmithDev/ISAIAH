@@ -1,0 +1,12 @@
+services:
+  iris:
+    environment:
+      ISAIAH_APPLY_SANDBOX: '1'
+    secrets: [isaiah-apply-operator]
+  app:
+    environment:
+      ISAIAH_APPLY_SANDBOX: '1'
+
+secrets:
+  isaiah-apply-operator:
+    file: ./.local/apply-operator.txt

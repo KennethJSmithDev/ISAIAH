@@ -1,0 +1,38 @@
+services:
+  iris:
+    environment:
+      ISAIAH_STANDALONE: '1'
+      ISAIAH_EDITION: ${ISAIAH_EDITION:-iris-for-health}
+      ISAIAH_RECOVERY_TEST_HOOKS: ${ISAIAH_RECOVERY_TEST_HOOKS:-0}
+  trace:
+    image: ${ISAIAH_IRIS_IMAGE:?Set ISAIAH_IRIS_IMAGE to the loaded Build 154U image}
+    pull_policy: never
+    command: [--after, 'sh /opt/trace-fixture/provision.sh']
+    environment:
+      ISAIAH_EDITION: ${ISAIAH_EDITION:-iris-for-health}
+    secrets: [isaiah-developer]
+    volumes:
+      - ./docker/trace-fixture:/opt/trace-fixture:ro
+      - ./module.xml:/opt/isaiah/module.xml:ro
+      - ./iris:/opt/isaiah/iris:ro
+      - ./.local/zpm-0.10.10.xml:/opt/isaiah/zpm.xml:ro
+    healthcheck:
+      test: [CMD-SHELL, '/irisHealth.sh && test -f /tmp/isaiah-private/trace-ready']
+      interval: 5s
+      start_period: 150s
+      retries: 4
+  app:
+    environment:
+      ISAIAH_STANDALONE: '1'
+      ISAIAH_EDITION: ${ISAIAH_EDITION:-iris-for-health}
+    ports: !override ['127.0.0.1:18757:18757']
+    depends_on:
+      trace:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:18757/api/state').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+    secrets: [isaiah-developer]
+
+secrets:
+  isaiah-developer:
+    file: ./.local/developer.json

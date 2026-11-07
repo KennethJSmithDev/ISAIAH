@@ -1,0 +1,11 @@
+{
+  "name": "isaiah",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": { "isaiah": "standalone/cli.mjs" },
+  "files": ["server.mjs", "runtime.mjs", "verifier.mjs", "learning.mjs", "learning/", "standalone/", "web/"],
+  "engines": { "node": "24.21.0" },
+  "scripts": { "start": "node server.mjs", "test": "node --test" }
+}

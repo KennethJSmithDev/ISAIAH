@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="IRIS" version="25">
+  <Document name="isaiah.ZPM">
+    <Module>
+      <Name>isaiah</Name>
+      <Version>0.1.0</Version>
+      <Description>ISAIAH synthetic delivery investigation for IRIS AI Hub and Interoperability.</Description>
+      <Packaging>module</Packaging>
+      <SourcesRoot>iris</SourcesRoot>
+      <Resource Name="Isaiah.PKG"/>
+      <SystemRequirements Version="&gt;=2026.3" Interoperability="enabled"/>
+    </Module>
+  </Document>
+</Export>

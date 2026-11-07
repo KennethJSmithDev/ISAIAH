@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISAIAH | Investigation workspace</title>
+  <link rel="stylesheet" href="/app.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+<header class="top"><div class="brand"><span class="mark" aria-hidden="true">I</span><div><strong>ISAIAH</strong><small>InterSystems Artificial Intelligence Agentic Harness</small></div></div><span class="version">v0.1.0 candidate</span></header>
+<main>
+  <p class="eyebrow">LOCAL DEVELOPER WORKSPACE</p>
+  <h1>Investigate a routing incident</h1>
+  <p class="intro">Follow a synthetic message through an IRIS production and compare the agent's finding with an independent check.</p>
+  <dl class="environment" aria-label="Execution environment">
+    <div><dt>Target</dt><dd id="target">Checking…</dd></div>
+    <div><dt>Runtime and model</dt><dd id="runtime">Checking…</dd></div>
+    <div><dt>Connection</dt><dd id="connection" role="status">Checking…</dd></div>
+  </dl>
+  <div class="workspace">
+    <section class="panel">
+      <h2>Investigation</h2>
+      <form id="task-form">
+        <label for="incident">Synthetic incident</label>
+        <select id="incident"><option value="R17">R17 · Delivery exception</option><option value="R29">R29 · Delivery exception</option></select>
+        <label for="task">Task objective</label>
+        <textarea id="task" required maxlength="1500" rows="4">Investigate why the synthetic message reached the wrong destination. Inspect the trace and receipts, then recommend the smallest justified correction or review.</textarea>
+        <p class="hint">Scope is limited to diagnostic reads for the selected incident.</p>
+        <div class="actions"><button id="start" type="submit" disabled>Start investigation</button><button id="cancel" type="button" disabled>Cancel</button></div>
+      </form>
+      <p id="feedback" role="status"></p>
+      <details><summary>Execution scope</summary><pre id="scope">Waiting for backend state.</pre></details>
+    </section>
+    <section class="panel">
+      <h2>Activity and evidence</h2>
+      <p id="run-status" class="status">No investigation started.</p>
+      <ol id="activity"></ol>
+      <div id="outcome"></div>
+      <form id="repair-form" hidden>
+        <label for="repair-value">Replay comparison value</label>
+        <input id="repair-value" required maxlength="16" pattern="[A-Z0-9]{1,16}">
+        <p class="hint">Runs through the synthetic router with a separate trace ID.</p>
+        <button id="repair-qualify" type="submit">Qualify repair</button>
+      </form>
+      <div id="repair-outcome"></div>
+      <details><summary>Inspect tool inputs and evidence</summary><pre id="evidence">No evidence recorded.</pre></details>
+    </section>
+    <section id="change-panel" class="panel wide" hidden>
+      <h2>R17 sandbox change</h2>
+      <p class="hint">Investigations use the original incident traces. This panel shows the deployed revision and checks delivery with a fresh message.</p>
+      <div class="actions">
+        <button id="plan-apply" type="button">Plan apply from passing replay</button>
+        <button id="plan-rollback" type="button">Plan rollback of this apply</button>
+      </div>
+      <label for="change-receipt-id">Plan or receipt ID</label>
+      <div class="receipt-lookup"><input id="change-receipt-id" maxlength="36" autocomplete="off" spellcheck="false"><button id="read-change" type="button">Read receipt</button></div>
+      <p id="change-status" role="status">No change loaded.</p>
+      <form id="approve-form" hidden>
+        <label for="operator-key">Sandbox operator approval key</label>
+        <input id="operator-key" type="password" required maxlength="67" autocomplete="off">
+        <button id="approve-change" type="submit">Approve this sealed plan</button>
+      </form>
+      <div class="actions">
+        <button id="execute-change" type="button">Execute approved plan</button>
+        <button id="verify-change" type="button">Verify synthetic delivery</button>
+      </div>
+      <details><summary>Inspect sealed plan and receipts</summary><pre id="change-evidence">No receipt loaded.</pre></details>
+    </section>
+    <section class="panel learning">
+      <h2>Learning review</h2>
+      <p id="lesson">Checking the learning store…</p>
+      <div id="reviews"></div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,55 @@
+name: isaiah-v010-package
+
+services:
+  iris:
+    image: ${ISAIAH_IRIS_IMAGE:?Set ISAIAH_IRIS_IMAGE to the loaded Build 154U image}
+    pull_policy: never
+    command: [--after, /opt/isaiah/provision.sh]
+    environment:
+      ISAIAH_COMPOSE: '1'
+    labels:
+      dev.isaiah.owner: packaging-v010
+    stop_grace_period: 30s
+    secrets: [isaiah-credentials]
+    volumes:
+      - ./module.xml:/opt/isaiah/module.xml:ro
+      - ./iris:/opt/isaiah/iris:ro
+      - ./docker/provision.sh:/opt/isaiah/provision.sh:ro
+      - ./.local/zpm-0.10.10.xml:/opt/isaiah/zpm.xml:ro
+    healthcheck:
+      test: [CMD-SHELL, '/irisHealth.sh && test -f /tmp/isaiah-private/ready']
+      interval: 5s
+      timeout: 5s
+      start_period: 120s
+      retries: 4
+
+  app:
+    image: node@sha256:44fce696f38ba8c987c4db89954051000bbd05ffd8d8659ba15ed4a8602e937f
+    init: true
+    user: node
+    working_dir: /opt/isaiah
+    command: [node, server.mjs]
+    environment:
+      ISAIAH_COMPOSE: '1'
+    depends_on:
+      iris:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:18747:18747'
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:18747/api/state').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 4s
+      retries: 4
+    secrets: [isaiah-credentials]
+    volumes:
+      - ./server.mjs:/opt/isaiah/server.mjs:ro
+      - ./runtime.mjs:/opt/isaiah/runtime.mjs:ro
+      - ./learning.mjs:/opt/isaiah/learning.mjs:ro
+      - ./verifier.mjs:/opt/isaiah/verifier.mjs:ro
+      - ./standalone:/opt/isaiah/standalone:ro
+      - ./web:/opt/isaiah/web:ro
+
+secrets:
+  isaiah-credentials:
+    file: ./.local/compose-credentials.json

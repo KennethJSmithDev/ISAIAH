@@ -1,0 +1,12 @@
+set sc=1 if '##class(Security.Resources).Exists("%DB_ISAIAH") set sc=##class(Security.Resources).Create("%DB_ISAIAH","ISAIAH task database","",1)
+if $SYSTEM.Status.IsError(sc) halt
+if '##class(Security.Resources).Exists("IsaiahRuntime") set sc=##class(Security.Resources).Create("IsaiahRuntime","ISAIAH scoped REST application","",0)
+if $SYSTEM.Status.IsError(sc) halt
+if '##class(Security.Roles).Exists("IsaiahLocal") set sc=##class(Security.Roles).Create("IsaiahLocal","ISAIAH local adapter","%DB_ISAIAH:RW,IsaiahRuntime:U","")
+if $SYSTEM.Status.IsError(sc) halt
+if '##class(Security.Users).Exists("IsaiahAdapter") set sc=##class(Security.Users).Create("IsaiahAdapter","IsaiahLocal",password,"ISAIAH scoped REST adapter","ISAIAH","","",0,1,"Task owned",1,"","",.attributes,1,1)
+if $SYSTEM.Status.IsError(sc) halt
+if '##class(Security.Applications).Exists("/isaiah") { kill p set p("NameSpace")="ISAIAH",p("DispatchClass")="Isaiah.Api",p("Enabled")=1,p("AutheEnabled")=32,p("Resource")="IsaiahRuntime",p("UseCookies")=0,p("AutoCompile")=0,p("ServeFiles")=0,sc=##class(Security.Applications).Create("/isaiah",.p) }
+if $SYSTEM.Status.IsError(sc) halt
+write "ISAIAH-SECURITY-READY",!
+halt

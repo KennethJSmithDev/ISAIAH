@@ -1,0 +1,23 @@
+set sc=1,load='##class(%Dictionary.ClassDefinition).%ExistsId("DevTrace.Production")
+if load set sc=$SYSTEM.OBJ.Load("/opt/trace-fixture/Request.cls","ck")
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if load set sc=$SYSTEM.OBJ.Load("/opt/trace-fixture/Intake.cls","ck")
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if load set sc=$SYSTEM.OBJ.Load("/opt/trace-fixture/Sink.cls","ck")
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if load set sc=$SYSTEM.OBJ.Load("/opt/trace-fixture/Production.cls","ck")
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set sc=##class(Ens.Director).GetProductionStatus(.name,.state)
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if state=1,name'="DevTrace.Production" halt
+if state'=1 set sc=##class(Ens.Director).StartProduction("DevTrace.Production")
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '$Data(^DevTrace("seed")) set sc=##class(Ens.Director).CreateBusinessService("Fixture Intake",.service)
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '$Data(^DevTrace("seed")) set sc=service.ProcessInput(##class(DevTrace.Request).%New(),.out)
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '$Data(^DevTrace("seed")) set sc=service.ProcessInput(##class(DevTrace.Request).%New(),.out)
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '$Data(^DevTrace("seed")) set ^DevTrace("seed")=1
+write "ISAIAHDEV-PRODUCTION-READY",!
+halt

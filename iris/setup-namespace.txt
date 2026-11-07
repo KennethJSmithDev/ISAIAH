@@ -1,0 +1,13 @@
+set dir="/usr/irissys/mgr/isaiah/",sc=1
+if '##class(Security.Resources).Exists("%DB_ISAIAH") set sc=##class(Security.Resources).Create("%DB_ISAIAH","ISAIAH task database","",1)
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '##class(%File).Exists(dir_"IRIS.DAT") set sc=##class(SYS.Database).CreateDatabase(dir,128,,0,"%DB_ISAIAH")
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '##class(Config.Databases).Exists("ISAIAH") { set p("Directory")=dir,sc=##class(Config.Databases).Create("ISAIAH",.p) }
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '##class(Config.Namespaces).Exists("ISAIAH") { kill p set p("Globals")="ISAIAH",p("Routines")="ISAIAH",sc=##class(Config.Namespaces).Create("ISAIAH",.p) }
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '$Get(isaiahSkipInterop) set sc=##class(%Library.EnsembleMgr).EnableNamespace("ISAIAH",1)
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+write "ISAIAH-NAMESPACE-READY",!
+halt

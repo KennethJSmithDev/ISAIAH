@@ -1,0 +1,10 @@
+set sc=1 if '##class(Security.Resources).Exists("IsaiahTraceRead") set sc=##class(Security.Resources).Create("IsaiahTraceRead","Scoped read-only developer trace","",0)
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '##class(Security.Roles).Exists("IsaiahTraceRole") set sc=##class(Security.Roles).Create("IsaiahTraceRole","Read approved trace headers","%DB_ISAIAHDEV:R,IsaiahTraceRead:U","")
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '##class(Security.Users).Exists("IsaiahTraceClient") set sc=##class(Security.Users).Create("IsaiahTraceClient","IsaiahTraceRole",password,"ISAIAH scoped trace reader","ISAIAHDEV","","",0,1,"Task owned",1,"","",.attributes,1,1)
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '##class(Security.Applications).Exists("/isaiah-trace") { kill p set p("NameSpace")="ISAIAHDEV",p("DispatchClass")="Isaiah.TraceApi",p("Enabled")=1,p("AutheEnabled")=32,p("Resource")="IsaiahTraceRead",p("UseCookies")=0,p("AutoCompile")=0,p("ServeFiles")=0,sc=##class(Security.Applications).Create("/isaiah-trace",.p) }
+if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+write "ISAIAH-SECURITY-READY",!
+halt
