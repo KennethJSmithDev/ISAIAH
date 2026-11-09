@@ -4,7 +4,8 @@ umask 077
 
 private=/tmp/isaiah-private
 source=/opt/isaiah
-mkdir -p "$private" /usr/irissys/mgr/isaiah
+mkdir -p "$private" /usr/irissys/mgr/isaiah /tmp/isaiah-review-outbox
+chmod 700 /tmp/isaiah-review-outbox
 rm -f "$private/ready"
 
 run_step() {
@@ -32,7 +33,7 @@ run_step ISAIAH ISAIAH-MODULE-READY <<'COS'
 set sc=1 if '##class(%Dictionary.ClassDefinition).%ExistsId("%IPM.Main") set sc=$SYSTEM.OBJ.Load("/opt/isaiah/zpm.xml","ck")
 if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
 set rows=##class(%SQL.Statement).%ExecDirect(,"SELECT VersionString FROM %IPM_Storage.ModuleItem WHERE Name = ?","isaiah"),installed=$Select(rows.%Next():rows.%Get("VersionString"),1:"")
-if installed'="",installed'="0.1.0" write "Unexpected installed ISAIAH module version",! halt
+if installed'="",installed'="0.1.1" write "Unexpected installed ISAIAH module version",! halt
 if installed="" set sc=##class(%IPM.Main).Shell("load /opt/isaiah -nodev")
 if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
 if '##class(%Dictionary.ClassDefinition).%ExistsId("Isaiah.Api") halt

@@ -125,6 +125,10 @@ ClassMethod Create(data As %DynamicObject, sandbox As %String, existing As %Dyna
         Return ..Error("409 Conflict","The original traces are unavailable.")
     }
     If kind="apply" {
+        Set contract=##class(Isaiah.SenderContract).Check(sandbox,basis)
+        If contract.status'="permitted" {
+            Return ..Error("409 Conflict",contract.reason)
+        }
         If '..Qualified(data,basis,before) {
             Return ..Error("409 Conflict","A passing R17 replay and matching before-state are required.")
         }
@@ -150,6 +154,10 @@ ClassMethod Create(data As %DynamicObject, sandbox As %String, existing As %Dyna
         "replayId":(data.replayId),"appliedId":(data.appliedId),"before":(before),"after":(after),
         "expectedDestination":(destination),"basisHash":(..Digest(basis.%ToJSON()))}
     Set record = {"plan":(plan),"fingerprint":(..Digest(plan.%ToJSON())),"phase":"planned"}
+    If kind="apply" {
+        Set plan.senderContract=contract.identity
+        Set record.fingerprint=..Digest(plan.%ToJSON())
+    }
     Do ..Store(record)
     Return record
 }
@@ -180,6 +188,12 @@ ClassMethod Delivered(trace As %DynamicObject, value As %String, destination As 
 ClassMethod BeforeMatches(plan As %DynamicObject) As %Boolean
 {
     Set current = ..Current()
+    If plan.kind="apply" {
+        If 'plan.%IsDefined("senderContract") { Return 0 }
+        Set contract=##class(Isaiah.SenderContract).Check(plan.target.sandbox,..Basis())
+        If contract.status'="permitted" { Return 0 }
+        If contract.identity.%ToJSON()'=plan.senderContract.%ToJSON() { Return 0 }
+    }
     Return (current.value=plan.before.value) && (current.revision=plan.before.revision) &&
         (..Digest(..Basis().%ToJSON())=plan.basisHash)
 }

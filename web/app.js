@@ -1,3 +1,5 @@
+import { api, eventDriven, requiresOperatorKey } from './provider.js';
+
 const byId = id => document.getElementById(id);
 let state;
 let busy = false;
@@ -6,18 +8,13 @@ let repairRunId;
 let changeRecord;
 let changeError = '';
 let changeBusy = false;
-let receiptId = sessionStorage.getItem('isaiah.changeId') || '';
+let observing = false;
+let visibilityVersion = 0;
+let refreshPromise;
+let refreshAgain = false;
+let refreshTimer;
+let receiptId = eventDriven ? '' : (sessionStorage.getItem('isaiah.changeId') || '');
 const passingReplay = run => run?.active ? undefined : run?.repairs?.findLast(receipt => receipt.status === 'pass');
-async function api(path, data) {
-  const response = await fetch(path, data === undefined ? {} : {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Isaiah-Request': 'browser' },
-    body: JSON.stringify(data)
-  });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error);
-  return result;
-}
 function append(parent, element, content) {
   const node = document.createElement(element);
   node.textContent = content;
@@ -29,42 +26,82 @@ function render() {
   byId('target').textContent = environment.target;
   byId('runtime').textContent = environment.runtime;
   byId('connection').textContent = environment.connection;
+  const accountSettings = byId('chatgpt-settings');
+  if (accountSettings) {
+    const account = scope.provider?.account;
+    accountSettings.hidden = scope.provider?.id !== 'chatgpt-plan' && !account;
+    const link = accountSettings.querySelector('a');
+    link.href = account?.managementOrigin ?? 'http://127.0.0.1:18759/';
+    link.textContent = account ? `Manage ${account.name} account · experimental bridge` : 'Manage ChatGPT account and plan usage';
+  }
   byId('scope').textContent = JSON.stringify(scope, null, 2);
-  byId('start').disabled = busy || !environment.ready || !!run?.active;
-  byId('cancel').disabled = busy || !run?.cancellable;
+  byId('start').disabled = !observing || busy || !environment.ready || !!run?.active;
+  byId('cancel').disabled = !observing || busy || !run?.cancellable;
   byId('feedback').textContent = localError;
   byId('run-status').textContent = run ? run.status + ' · ' + run.incident : 'No investigation started.';
-  byId('activity').replaceChildren();
-  for (const event of run?.activity || []) append(byId('activity'), 'li', event);
+  // Presentation reads the existing run; it adds no verification or authority.
+  byId('run-identity').textContent = run ? 'Run ' + run.id : 'No run selected.';
+  byId('branch-identity').textContent = run?.branchReceipt
+    ? 'Recorded branch: ' + run.branchReceipt.mode + ' · ' + run.branchReceipt.operation
+    : 'No branch receipt recorded.';
+  byId('run-metrics').textContent = run?.metrics
+    ? (run.metrics.modelResponses ?? 'Unknown') + ' recorded model responses · ' + (run.audit?.length ?? 'Unknown') + ' tool audit entries'
+    : '';
+  byId('run-status').dataset.tone = run?.active ? 'working'
+    : run?.verification?.status === 'fail' || run?.phase === 'failed' ? 'failed'
+    : run?.verification?.status === 'pass' ? (run.branchReceipt?.mode === 'review' ? 'review' : 'verified') : 'idle';
+  const activity = byId('activity'), activityKey = JSON.stringify(run?.activity || []);
+  if (activity.dataset.snapshot !== activityKey) {
+    activity.dataset.snapshot = activityKey;
+    activity.replaceChildren();
+    for (const event of run?.activity || []) append(activity, 'li', event);
+  }
   const outcome = byId('outcome');
+  const outcomeKey = JSON.stringify([run?.decision, run?.verification, run?.learningUse, run?.branchReceipt]);
+  if (outcome.dataset.snapshot !== outcomeKey) {
+  outcome.dataset.snapshot = outcomeKey;
   outcome.replaceChildren();
   if (run?.decision) {
     const { finding, proposal } = run.decision;
     const titles = { rule_mismatch: 'Routing condition mismatch', downstream_fallback: 'Downstream fallback', insufficient_evidence: 'Insufficient evidence' };
-    append(outcome, 'p', 'Agent finding: ' + (titles[finding] || finding));
+    append(outcome, 'p', 'Agent finding: ' + (titles[finding] || finding)).className = 'agent-finding';
     if (proposal?.action === 'align_match_priority') {
-      append(outcome, 'p', 'Proposed fixture correction: compare with ' + proposal.to + ' instead of ' + proposal.from + '.');
+      append(outcome, 'p', 'Proposed fixture correction: compare with ' + proposal.to + ' instead of ' + proposal.from + '.').className = 'agent-proposal';
     }
     if (proposal?.action === 'review_destination_availability') {
-      append(outcome, 'p', 'Recommended review: ' + proposal.from + ' availability and downstream fallback.');
+      append(outcome, 'p', 'Recommended review: ' + proposal.from + ' availability and downstream fallback.').className = 'agent-proposal';
     }
-    if (proposal?.action === 'request_more_evidence') append(outcome, 'p', 'Recommended review: gather more evidence.');
+    if (proposal?.action === 'request_more_evidence') append(outcome, 'p', 'Recommended review: gather more evidence.').className = 'agent-proposal';
   }
-  if (run?.verification) append(outcome, 'p', 'Independent verification: ' + run.verification.status + ' · ' + run.verification.reason);
+  if (run?.verification) {
+    const verified = append(outcome, 'p', 'Independent verification: ' + run.verification.status + ' · ' + run.verification.reason);
+    verified.className = 'verification-result';
+    verified.dataset.status = run.verification.status;
+  }
+  if (run?.branchReceipt?.notification) {
+    const status = run.branchReceipt.notification.status;
+    append(outcome, 'p', 'Local review notice at dispatch: ' + status + '. ' +
+      (status === 'written' ? 'The synthetic outbox file was written; delivery and approval are not implied.'
+        : 'Inspect the scoped notification record; an IRIS administrator can retry safely.'));
+  }
   if (run?.learningUse) append(outcome, 'p', run.learningUse.confirmed
     ? 'The agent followed the reviewed comparison order.'
     : 'The reviewed revision was loaded. Its comparison order was not observed.');
   if (run?.learningUse?.repairCheck !== undefined) append(outcome, 'p', run.learningUse.repairCheck
     ? 'The agent reported the reviewed replay requirement.'
     : 'The repair lesson was loaded. Its replay requirement was not reported.');
+  }
   const showRepair = !!run?.repairAvailable && !run.active;
   byId('repair-form').hidden = !showRepair;
-  byId('repair-qualify').disabled = busy || !environment.ready || (run?.repairs?.length ?? 0) >= 6;
+  byId('repair-qualify').disabled = !observing || busy || !environment.ready || (run?.repairs?.length ?? 0) >= 6;
   if (showRepair && repairRunId !== run.id) {
     repairRunId = run.id;
     byId('repair-value').value = run.decision.proposal?.to || '';
   }
   const repairs = byId('repair-outcome');
+  const repairKey = JSON.stringify([run?.id, run?.repairs, learning.reviews, busy, observing]);
+  if (repairs.dataset.snapshot !== repairKey) {
+  repairs.dataset.snapshot = repairKey;
   repairs.replaceChildren();
   for (const receipt of run?.repairs || []) {
     append(repairs, 'p', (receipt.status === 'pass' ? 'Qualified synthetic repair' : 'Replay ' + receipt.status)
@@ -73,14 +110,16 @@ function render() {
   const correction = run?.repairs?.findLast(receipt => receipt.status === 'pass' && receipt.correctedFrom);
   if (correction && !learning.reviews.some(review => review.kind === 'repair')) {
     const stage = append(repairs, 'button', 'Prepare correction lesson');
-    stage.disabled = busy;
+    stage.disabled = busy || !observing;
     stage.addEventListener('click', () => change('/api/learning', { action: 'propose-repair', id: correction.id, runId: run.id }));
   }
-  byId('evidence').textContent = run ? JSON.stringify(run, null, 2) : 'No evidence recorded.';
+  }
+  const evidence = run ? JSON.stringify(run, null, 2) : 'No evidence recorded.';
+  if (byId('evidence').textContent !== evidence) byId('evidence').textContent = evidence;
   renderChange();
   byId('lesson').textContent = learning.summary;
   const reviews = byId('reviews');
-  const reviewKey = JSON.stringify(learning.reviews);
+  const reviewKey = JSON.stringify([learning.reviews, observing, busy]);
   if (reviews.dataset.snapshot === reviewKey) return;
   reviews.dataset.snapshot = reviewKey;
   reviews.replaceChildren();
@@ -106,6 +145,7 @@ function render() {
     }
     for (const [action, label] of Object.entries(review.actions)) {
       const button = append(row, 'button', label);
+      button.disabled = busy || !observing;
       button.addEventListener('click', () => change('/api/learning', { action, id: review.id }));
     }
   }
@@ -114,58 +154,119 @@ function renderChange() {
   const enabled = !!state?.environment.applyEnabled;
   const { plan, fingerprint, phase, commit, verification, current } = changeRecord ?? {};
   byId('change-panel').hidden = !enabled && !receiptId;
-  byId('plan-apply').disabled = changeBusy || !enabled || !passingReplay(state?.run);
-  byId('plan-rollback').disabled = changeBusy || !enabled || plan?.kind !== 'apply' || !commit || current?.revision !== commit.revision;
+  byId('plan-apply').disabled = !observing || changeBusy || !enabled || !passingReplay(state?.run);
+  byId('plan-rollback').disabled = !observing || changeBusy || !enabled || plan?.kind !== 'apply' || !commit || current?.revision !== commit.revision;
   byId('read-change').disabled = changeBusy;
   byId('approve-form').hidden = phase !== 'planned';
-  byId('approve-change').disabled = changeBusy || !enabled;
-  byId('execute-change').disabled = changeBusy || !enabled || phase !== 'approved';
-  byId('verify-change').disabled = changeBusy || !enabled || phase !== 'committed';
+  byId('approve-change').disabled = !observing || changeBusy || !enabled;
+  byId('execute-change').disabled = !observing || changeBusy || !enabled || phase !== 'approved';
+  byId('verify-change').disabled = !observing || changeBusy || !enabled || phase !== 'committed';
   byId('change-status').textContent = changeError || (plan
     ? `${plan.kind} · ${phase} · ${plan.before.value} v${plan.before.revision} → ${plan.after.value} v${plan.after.revision} · ${plan.expectedDestination} expected · `
       + `sandbox ${plan.target.sandbox} · fingerprint ${fingerprint} · deployed ${current.value} v${current.revision}`
       + (verification ? ` · delivery ${verification.status}` : '')
     : (receiptId ? 'Read the receipt for the retained ID before continuing.' : 'No change loaded.'));
-  byId('change-evidence').textContent = changeRecord ? JSON.stringify(changeRecord, null, 2) : 'No receipt loaded.';
+  const evidence = changeRecord ? JSON.stringify(changeRecord, null, 2) : 'No receipt loaded.';
+  if (byId('change-evidence').textContent !== evidence) byId('change-evidence').textContent = evidence;
 }
 async function changeSandbox(data, id = data?.id) {
-  if (changeBusy || !id) return;
+  if (changeBusy || !id || (data && !observing)) return;
   changeBusy = true;
   changeError = '';
   if (receiptId !== id) changeRecord = undefined;
   receiptId = byId('change-receipt-id').value = id;
-  sessionStorage.setItem('isaiah.changeId', id);
+  if (!eventDriven) sessionStorage.setItem('isaiah.changeId', id);
   renderChange();
-  try { changeRecord = data ? await api('/api/changes', data) : await api('/api/changes/' + encodeURIComponent(id)); }
+  const version = visibilityVersion;
+  try {
+    const receipt = data ? await api('/api/changes', data) : await api('/api/changes/' + encodeURIComponent(id));
+    if (version !== visibilityVersion || document.hidden) {
+      changeRecord = undefined;
+      changeError = `Read the receipt for ${id} before continuing.`;
+    } else changeRecord = receipt;
+  }
   catch (error) {
     changeRecord = undefined;
     changeError = `${error.message} Read the receipt for ${id} before continuing.`;
-  } finally { changeBusy = false; renderChange(); }
+    if (data) observing = false;
+  } finally {
+    changeBusy = false;
+    renderChange();
+    if (!observing && !document.hidden) await reconcile();
+    scheduleRefresh();
+  }
 }
 let requestSequence = 0;
 async function refresh() {
-  const sequence = ++requestSequence;
-  try {
-    const next = await api('/api/state');
-    if (sequence !== requestSequence) return;
-    state = next;
-    render();
-  } catch {
-    if (sequence !== requestSequence) return;
-    byId('connection').textContent = 'Backend unavailable';
-    byId('start').disabled = true;
-    byId('cancel').disabled = true;
-    byId('repair-qualify').disabled = true;
+  if (document.hidden) return false;
+  if (refreshPromise) { refreshAgain = true; return refreshPromise; }
+  refreshPromise = (async () => {
+    let ok = false;
+    do {
+      refreshAgain = false;
+      const sequence = ++requestSequence;
+      try {
+        const next = await api('/api/state');
+        if (sequence !== requestSequence || document.hidden) continue;
+        state = next;
+        render();
+        ok = true;
+      } catch {
+        if (sequence !== requestSequence) continue;
+        observing = false;
+        if (state) render();
+        byId('connection').textContent = 'Backend unavailable';
+        byId('start').disabled = true;
+        byId('cancel').disabled = true;
+        byId('repair-qualify').disabled = true;
+        ok = false;
+      }
+    } while (refreshAgain && !document.hidden);
+    return ok;
+  })();
+  try { return await refreshPromise; } finally { refreshPromise = undefined; }
+}
+
+function scheduleRefresh() {
+  clearTimeout(refreshTimer);
+  if (document.hidden || eventDriven) return;
+  const delay = state?.run?.active ? 1200 : (['planned', 'approved', 'committed'].includes(changeRecord?.phase) ? 5000 : 15000);
+  refreshTimer = setTimeout(async () => { if (observing) await refresh(); else await reconcile(); scheduleRefresh(); }, delay);
+}
+
+async function reconcile() {
+  const version = ++visibilityVersion;
+  observing = false;
+  if (state) render();
+  if (changeBusy) return;
+  const ok = await refresh();
+  if (!ok || document.hidden || version !== visibilityVersion) return;
+  if (receiptId) {
+    try {
+      const receipt = await api('/api/changes/' + encodeURIComponent(receiptId));
+      if (document.hidden || version !== visibilityVersion) return;
+      changeRecord = receipt;
+      changeError = '';
+    } catch (error) {
+      changeRecord = undefined;
+      changeError = `${error.message} Read the receipt for ${receiptId} before continuing.`;
+      render();
+      return;
+    }
   }
+  observing = true;
+  render();
 }
 async function change(path, data) {
-  if (busy) return;
+  if (busy || !observing) return;
   busy = true;
+  // An observation started before a mutation must not re-enable controls with stale state.
+  requestSequence++;
   localError = '';
   render();
   try { await api(path, data); }
   catch (error) { localError = error.message; }
-  finally { busy = false; await refresh(); }
+  finally { busy = false; await refresh(); scheduleRefresh(); }
 }
 byId('task-form').addEventListener('submit', event => {
   event.preventDefault();
@@ -185,12 +286,34 @@ byId('plan-rollback').addEventListener('click', () => changeSandbox({ operation:
 byId('read-change').addEventListener('click', () => changeSandbox(undefined, byId('change-receipt-id').value.trim()));
 byId('approve-form').addEventListener('submit', event => {
   event.preventDefault();
-  const operatorKey = byId('operator-key').value;
-  byId('operator-key').value = '';
+  const operatorKey = requiresOperatorKey ? byId('operator-key').value : '';
+  if (requiresOperatorKey) byId('operator-key').value = '';
   changeSandbox({ operation: 'approve', id: changeRecord.plan.id, fingerprint: changeRecord.fingerprint, operatorKey });
 });
 for (const operation of ['execute', 'verify']) {
   byId(operation + '-change').addEventListener('click', () => changeSandbox({ operation, id: changeRecord.plan.id, fingerprint: changeRecord.fingerprint }));
 }
-await refresh();
-setInterval(refresh, 1200);
+const lastPanelFocus = new Map();
+document.addEventListener('focusin', event => {
+  const panel = event.target.closest?.('[data-panel]');
+  if (panel && event.target.tagName !== 'H2') lastPanelFocus.set(panel.dataset.panel, event.target);
+});
+for (const button of document.querySelectorAll('[data-view]')) button.addEventListener('click', () => {
+  const view = button.dataset.view;
+  document.querySelector('.workspace').dataset.mobileView = view;
+  for (const item of document.querySelectorAll('[data-view]')) item.setAttribute('aria-pressed', String(item === button));
+  const previous = lastPanelFocus.get(view);
+  if (previous?.isConnected && !previous.disabled) previous.focus();
+  else document.querySelector(`[data-panel="${view}"] h2`)?.focus();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    visibilityVersion++;
+    requestSequence++;
+    observing = false;
+    clearTimeout(refreshTimer);
+    if (state) render();
+  } else void reconcile().finally(scheduleRefresh);
+});
+await reconcile();
+scheduleRefresh();

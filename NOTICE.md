@@ -12,3 +12,7 @@ ISAIAH uses locally installed or operator-acquired components. Their original di
 - Docker Compose uses the Docker Official Node.js 24.22.0 Alpine image pinned by digest. IPM 0.10.10 is obtained from the official release and verified before import. Neither dependency is bundled in the ISAIAH source or IPM archive. [Docker Official Node image](https://hub.docker.com/_/node) · [InterSystems IPM](https://github.com/intersystems/ipm/releases/tag/v0.10.10)
 
 The project's Apache-2.0 license applies to ISAIAH source. Separately acquired software remains subject to its own terms.
+
+- `jose` 6.1.0, used for ChatGPT ID-token validation, is licensed under MIT, Copyright (c) 2018 Filip Skokan. Its complete license is included with the dependency. See https://github.com/panva/jose.
+
+Optional synthetic interoperability qualification uses separately acquired Orthanc 1.13.0 and its DICOMweb plugin, plus pydicom 3.0.1. Orthanc core uses GPLv3+; the DICOMweb plugin uses AGPL terms. They are separate processes, not bundled ISAIAH runtime binaries or copied source. See https://www.orthanc-server.com/static.php?page=documentation and https://www.orthanc-server.com/static.php?page=dicomweb. pydicom is primarily MIT-licensed with additional notices for incorporated portions; retain its complete LICENSE from the installed distribution. See https://github.com/pydicom/pydicom/blob/v3.0.1/LICENSE. The tiny DICOM fixture distributed with these tests was generated specifically for ISAIAH and contains synthetic data.

@@ -105,6 +105,9 @@ async function traceFixture() {
   const count = () => db.prepare('SELECT COUNT(*) AS count FROM skill').get().count;
   const first = await trace();
   assert.equal(first.learningReview.status, 'proposed');
+  assert.equal(first.observations.basis, 'recorded-headers-only');
+  assert.equal(first.observations.delivery, 'unverified');
+  assert.deepEqual(first.observations.observedEndpoints, ['Synthetic Intake', 'Synthetic Sink']);
   assert.equal(first.learning.revision, null);
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM active_skill').get().count, 0);
   const revision = first.skillProposal.id;
@@ -119,6 +122,7 @@ async function traceFixture() {
   assert.equal(afterUnchanged, before);
   for (const run of [first, second]) {
     const recorded = JSON.parse(await readFile(join(directory, run.id + '.json'), 'utf8'));
+    assert.equal(recorded.observations, undefined); // Re-derived from the retained independent headers.
     assert.deepEqual(recorded.learningReview, run.learningReview);
     assert.equal(recorded.verification.status, 'pass');
   }
@@ -175,6 +179,12 @@ test('teaching modes affect cues, and version boundaries and citation IDs constr
   const ledger = openLedger(directory);
   try {
     const teaching = createTeaching(ledger, 'iris-for-health');
+    for (const topic of ['monitor','adapters','hl7','fhir','dicom']) {
+      const lesson=await teaching.explain({topic});
+      assert.equal(lesson.kind,'starter');
+      assert.equal(lesson.docs[0].version,'2026.2');
+      assert.ok(lesson.docs[0].url.startsWith('https://docs.intersystems.com/irisforhealth20262/'));
+    }
     const reference = { kind: 'run', id: 'fixture' };
     assert.deepEqual(teaching.cue('session', reference).evidence, reference);
     teaching.preference({ mode: 'focus' });

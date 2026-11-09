@@ -1,0 +1,41 @@
+// Read-only inspection of the task-owned combined Compose app and receipts.
+import assert from 'node:assert/strict';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+const { chromium } = await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);
+const evidenceDir = resolve(process.env.ISAIAH_COMBINED_EVIDENCE);
+await mkdir(evidenceDir, { recursive: true });
+const apply = JSON.parse(await readFile('.local/apply-qualification.json', 'utf8'));
+const origin = 'http://127.0.0.1:18757';
+const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
+const page = await context.newPage(), requests = [], errors = [], checks = [];
+const check = (name, condition) => { assert.ok(condition, name); checks.push(name); };
+page.on('request', req => requests.push({ path: new URL(req.url()).pathname, method: req.method() }));
+page.on('pageerror', error => errors.push(error.message));
+try {
+  const state = await (await fetch(origin + '/api/state')).json();
+  check('packaged backend connected to synthetic Health sandbox', state.environment.ready && state.environment.applyEnabled);
+  check('native run evidence remains selected', state.run.id === apply.source.id && state.run.verification.status === 'pass');
+  await page.goto(origin);
+  await page.locator('#start:not([disabled])').waitFor();
+  await page.locator('[data-view="activity"]').click();
+  const shown = JSON.parse(await page.locator('#evidence').textContent());
+  check('mobile evidence shows the same native run and verifier', shown.id === state.run.id && shown.verification.status === 'pass');
+  await page.locator('[data-panel="activity"] summary').click();
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.setViewportSize({ width: 390, height: 844 });
+  check('evidence disclosure and run persist across orientation change', await page.locator('[data-panel="activity"] details').evaluate(el => el.open) && JSON.parse(await page.locator('#evidence').textContent()).id === state.run.id);
+  await page.locator('[data-view="change"]').click();
+  await page.locator('#change-receipt-id').fill(apply.rollback.plan.id);
+  await page.locator('#read-change').click();
+  await page.waitForFunction(() => document.querySelector('#change-status').textContent.includes('rollback') && document.querySelector('#change-status').textContent.includes('verified'));
+  check('restored rollback receipt appears in mobile workspace', (await page.locator('#change-status').textContent()).includes('PRIORITY'));
+  check('read-only browser test submitted no actions', requests.every(request => request.method === 'GET'));
+  check('no page errors or overflow', errors.length === 0 && await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.screenshot({ path: resolve(evidenceDir, 'packaged-mobile-390.png') });
+  const report = { browser: browser.version(), mode: 'headless Edge, real local packaged app, read-only after native synthetic runs', run: state.run.id, rollback: apply.rollback.plan.id, checks, requests, errors };
+  await writeFile(resolve(evidenceDir, 'packaged-browser.json'), JSON.stringify(report, null, 2));
+  console.log(JSON.stringify(report, null, 2));
+} finally { await context.close(); await browser.close(); }

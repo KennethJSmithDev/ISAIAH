@@ -42,10 +42,11 @@ ClassMethod Run() As %Status
 {
     Try {
         Set data = {}.%FromJSON(%request.Content)
-        Set run = data.runId, incident = data.incident
+        Set run = data.runId, incident = data.incident, model = data.%Get("model","gpt-oss:20b")
         If '##class(Isaiah.State).RunId(run) || '##class(Isaiah.State).Incident(incident) || ($Length(data.objective)<1) || ($Length(data.objective)>1500) || ($Length(data.guidance)>3000) {
             Return ..Reply({"error":"Invalid investigation contract."},"400 Bad Request")
         }
+        If '##class(Isaiah.NativeAgent).ValidModel(model) { Return ..Reply({"error":"Invalid selected model."},"400 Bad Request") }
         Lock +^IsaiahRun(run):2 Else  Return ..Reply({"error":"Investigation state is busy."},"409 Conflict")
         If $Data(^IsaiahRun(run)) {
             Lock -^IsaiahRun(run)
@@ -58,7 +59,7 @@ ClassMethod Run() As %Status
         If $$$ISOK(status) {
             Set input = ##class(Isaiah.Request).%New()
             Set input.Incident=incident, input.RunId=run, input.Action="investigate"
-            Set input.Payload={"objective":(data.objective),"guidance":(data.guidance)}.%ToJSON()
+            Set input.Payload={"objective":(data.objective),"guidance":(data.guidance),"model":(model)}.%ToJSON()
             Set status = service.ProcessInput(input,.output)
         }
         If $$$ISERR(status) {
@@ -102,7 +103,7 @@ ClassMethod Verification(id As %String) As %Status
         Do raw.%Push({}.%FromJSON(^IsaiahReceipt(incident,seq)))
     }
     Set receipt = {}.%FromJSON($Get(^IsaiahRun(id,"branch"),"{}"))
-    Return ..Reply({"incident":(incident),"incomingPriority":($Get(^IsaiahInput(incident,"priority"))),"requested":($Get(^IsaiahInput(incident,"requested"))),"predicate":($Get(^IsaiahRoute(incident,"predicate"))),"selected":($Get(^IsaiahRoute(incident,"selected"))),"receipts":(raw),"branch":(receipt)})
+    Return ..Reply({"incident":(incident),"incomingPriority":($Get(^IsaiahInput(incident,"priority"))),"requested":($Get(^IsaiahInput(incident,"requested"))),"predicate":($Get(^IsaiahRoute(incident,"predicate"))),"selected":($Get(^IsaiahRoute(incident,"selected"))),"receipts":(raw),"branch":(receipt),"reviewNotification":($Get(^IsaiahRun(id,"notification"),"not-requested"))})
 }
 
 ClassMethod Replay() As %Status
@@ -192,6 +193,7 @@ ClassMethod DeveloperAssist() As %Status
             ($Length(data.context)<1) || ($Length(data.context)>20000) || ($Length(data.guidance)>2000) {
             Return ..Reply({"error":"Invalid developer assistance request."},"400 Bad Request")
         }
+        If '##class(Isaiah.NativeAgent).ValidModel(data.%Get("model","gpt-oss:20b")) { Return ..Reply({"error":"Invalid selected model."},"400 Bad Request") }
         Set result=##class(Isaiah.NativeAgent).DeveloperAssist(data)
         Return ..Reply(result)
     } Catch ex {

@@ -3,10 +3,10 @@ import { createServer } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { legacyModel, loadProviderCredential, loadProviderProfile, providerReady, readProviderJson } from './provider-profiles.mjs';
 
 export const ceilings = Object.freeze({ modelRequests: 12, toolDispatches: 24, elapsedSeconds: 300 });
-export const model = 'gpt-oss:20b';
-const digest = '9ba9cc2b4e02463b933096090530aef679d534dd91ecc9afadfb2dbfdc59f3c5';
+export const model = legacyModel;
 const containerImage = 'sha256:bbea4364ab6fbd7810219780fa76730fc2977d8cf76f3e01b92c5d4291a2feae';
 
 function docker(args, data, timeout = 6500) {
@@ -54,10 +54,13 @@ export function json(res, status, data) {
 }
 
 export async function createRuntime(directory, active, compose = false, repairLocal = false, applySandbox = false, standalone = false, profile = null) {
-  const modelOrigin = standalone ? (compose ? 'http://host.docker.internal:18758' : 'http://127.0.0.1:18758') :
-    (compose ? 'http://host.docker.internal:' + (applySandbox ? 18752 : 18746) : (repairLocal ? 'http://127.0.0.1:18746' : 'http://127.0.0.1:18744'));
+  const selected = await loadProviderProfile({ compose, repairLocal, applySandbox, standalone });
+  const upstreamCredential = await loadProviderCredential();
+  if (selected.account && !upstreamCredential) throw new Error('Experimental account bridges require a separate local bridge credential.');
+  const providerIdentity = Object.freeze({ id: selected.id, kind: selected.kind, model: selected.model,
+    ...(selected.account ? { account: selected.account, qualification: 'experimental-unqualified' } : {}) });
   const owner = repairLocal ? 'repair-local' : 'local-v010';
-  const runtimeLabel = 'Native AI Hub · Ollama ' + model;
+  const runtimeLabel = 'Native AI Hub · ' + selected.kind + ' · ' + selected.model + (selected.account ? ' · experimental bridge' : '');
   const disconnected = connection => ({ target: 'ISAIAH · synthetic only', runtime: runtimeLabel, connection, ready: false });
   let credentials;
   let id;
@@ -68,7 +71,10 @@ export async function createRuntime(directory, active, compose = false, repairLo
     if ((!compose && !profile?.agentUrl && !/^[0-9a-f]{64}$/.test(id)) || !/^Is![A-F0-9]{28}$/.test(credentials.password) ||
         !/^[A-F0-9]{64}$/.test(credentials.providerToken)) throw new Error('Invalid configuration');
   } catch {
-    return { health: async () => disconnected('Disconnected · run sandbox setup') };
+    return { health: async () => disconnected('Disconnected · run sandbox setup'), model: selected.model, provider: providerIdentity, close: async () => {} };
+  }
+  if (upstreamCredential && [credentials.password, credentials.providerToken, profile?.tracePassword].includes(upstreamCredential)) {
+    throw new Error('Provider credential must be separate from IRIS and gateway credentials.');
   }
 
   const iris = async (method, path, body) => {
@@ -116,20 +122,21 @@ export async function createRuntime(directory, active, compose = false, repairLo
     let counted = false;
     try {
       const { data, bytes } = await requestBody(req, 96_000);
-      if (data.model !== model || !Array.isArray(data.messages) || data.stream === true) {
+      if (data.model !== selected.model || !Array.isArray(data.messages) || data.stream === true) {
         return json(res, 400, { error: 'Unapproved model or request shape.' });
       }
       metrics.providerInputBytes += bytes;
       const body = {
-        model, messages: data.messages, tools: data.tools, tool_choice: data.tool_choice,
-        temperature: 0, stream: false, max_tokens: 1500, reasoning_effort: 'low'
+        model: selected.model, messages: data.messages, tools: data.tools, tool_choice: data.tool_choice,
+        temperature: 0, stream: false, max_tokens: 1500,
+        ...(selected.kind === 'ollama' ? { reasoning_effort: 'low' } : {})
       };
-      const upstream = await fetch(modelOrigin + '/v1/chat/completions', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-        signal: control.providerSignal
+      const upstream = await fetch(selected.origin + '/v1/chat/completions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...(upstreamCredential ? { Authorization: 'Bearer ' + upstreamCredential } : {}) }, body: JSON.stringify(body),
+        signal: control.providerSignal, redirect: 'error'
       });
       if (!upstream.ok) throw new Error('Local model rejected the provider request.');
-      const completion = await upstream.json();
+      const completion = await readProviderJson(upstream);
       if (!Array.isArray(completion.choices) || !completion.choices.length) throw new Error('Malformed local model completion.');
       metrics.modelResponses++;
       counted = true;
@@ -170,18 +177,12 @@ export async function createRuntime(directory, active, compose = false, repairLo
       return disconnected('Disconnected · ISAIAH production or build check failed');
     }
     try {
-      const [version, tags] = await Promise.all(['/api/version', '/api/tags'].map(async path => {
-        const response = await fetch(modelOrigin + path, { signal: AbortSignal.timeout(2500) });
-        if (!response.ok) throw new Error('Ollama unavailable');
-        return response.json();
-      }));
-      if (version.version !== '0.40.6' || !tags.models?.some(item => item.name === model && item.digest === digest)) {
-        return disconnected('Disconnected · pinned Ollama model or runtime differs');
-      }
-    } catch { return disconnected('Disconnected · start the ISAIAH model process'); }
+      if (!await providerReady(selected, upstreamCredential)) return disconnected('Disconnected · selected provider model or runtime differs');
+    } catch { return disconnected('Disconnected · selected local provider is unavailable'); }
     const edition = sandbox.edition === 'iris' ? 'IRIS' : 'IRIS for Health';
     return { target: `ISAIAH · ${edition} Build 154U`, runtime: runtimeLabel, connection: 'Connected · synthetic sandbox',
       ready: true, applyEnabled: applySandbox && !!sandbox.applyEnabled };
   };
-  return { health, iris };
+  return { health, iris, model: selected.model, provider: providerIdentity,
+    close: () => new Promise(resolve => provider.close(() => resolve())) };
 }

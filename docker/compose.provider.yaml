@@ -1,0 +1,8 @@
+services:
+  app:
+    environment:
+      ISAIAH_PROVIDER_PROFILE_FILE: /run/secrets/isaiah-provider-profile
+    secrets: [isaiah-provider-profile]
+secrets:
+  isaiah-provider-profile:
+    file: ./.local/provider-profile.json

@@ -3,13 +3,18 @@
   <Document name="isaiah.ZPM">
     <Module>
       <Name>isaiah</Name>
-      <Version>0.1.0</Version>
+      <Version>0.1.1</Version>
       <Description>ISAIAH synthetic delivery investigation for IRIS AI Hub and Interoperability.</Description>
       <Packaging>module</Packaging>
       <SourcesRoot>iris</SourcesRoot>
       <Resource Name="Isaiah.PKG"/>
       <FileCopy Name="LICENSE" Target="${libdir}isaiah/LICENSE"/>
       <FileCopy Name="NOTICE.md" Target="${libdir}isaiah/NOTICE.md"/>
+      <!-- Build 154 resolves authorization while generating the MCP ToolSet. -->
+      <Invoke Class="%SYSTEM.OBJ" Method="Compile" Phase="Compile" When="Before" CheckStatus="true">
+        <Arg>Isaiah.TraceMCPPolicy</Arg>
+        <Arg>ck</Arg>
+      </Invoke>
       <SystemRequirements Version="&gt;=2026.3" Interoperability="enabled"/>
     </Module>
   </Document>

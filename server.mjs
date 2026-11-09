@@ -4,10 +4,13 @@ import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createLearning } from './learning.mjs';
-import { ceilings, createRuntime, json, model, requestBody } from './runtime.mjs';
+import { ceilings, createRuntime, json, requestBody } from './runtime.mjs';
 import { repairBaseline, verify, verifyReplay } from './verifier.mjs';
 import { createDeveloper, developerProfile } from './standalone/developer.mjs';
 import { standalonePort } from './standalone/loopback.mjs';
+import { traceObservations } from './standalone/trace-observations.mjs';
+import { loadInterop } from './standalone/interop.mjs';
+import { loadMonitor } from './standalone/monitor.mjs';
 
 const compose = process.env.ISAIAH_COMPOSE === '1';
 const repairLocal = !compose && process.env.ISAIAH_REPAIR_LOCAL === '1';
@@ -29,10 +32,11 @@ const learning = await createLearning({ dataDir, compatibility });
 const web = new Map([
   ['/', ['index.html', 'text/html']],
   ['/app.css', ['app.css', 'text/css']],
-  ['/app.js', ['app.js', 'text/javascript']]
+  ['/app.js', ['app.js', 'text/javascript']],
+  ['/provider.js', ['provider.js', 'text/javascript']]
 ]);
 const scope = {
-  data: 'Synthetic only', namespace: 'ISAIAH', compatibility, model, decisionSchema: 2,
+  data: 'Synthetic only', namespace: 'ISAIAH', compatibility, decisionSchema: 2,
   actions: ['Read selected incident trace and destination receipts', 'Dispatch a read-only diagnostic or record human review',
     'Replay a candidate predicate under a separate synthetic trace ID'],
   ceilings
@@ -45,7 +49,7 @@ const savedRuns = (await readdir(runsDir)).filter(name => /^\d{13}-[0-9a-f-]{36}
 for (const name of savedRuns.reverse()) {
   try {
     const candidate = JSON.parse(await readFile(join(runsDir, name), 'utf8'));
-    if (candidate.kind === 'trace') continue;
+    if (['trace','interop-read','teaching'].includes(candidate.kind)) continue;
     latest = candidate;
     if (latest.active) {
       latest.active = latest.cancellable = false;
@@ -59,8 +63,15 @@ const profile = standalone ? await developerProfile(compose) : null;
 const edition = process.env.ISAIAH_EDITION ?? 'iris-for-health';
 if (!['iris', 'iris-for-health'].includes(edition)) throw new Error('Unknown ISAIAH edition profile.');
 const runtime = await createRuntime(dataDir, () => control, compose, repairLocal, applySandbox, standalone, profile);
-const developer = standalone ? createDeveloper({ directory: dataDir, profile, edition, assist, persist, readRun }) : null;
-let environment = { target: 'ISAIAH · synthetic only', runtime: 'Native AI Hub · ' + model, connection: 'Checking local services…', ready: false };
+scope.model = runtime.model;
+scope.provider = runtime.provider;
+const endpoints = standalone ? await loadInterop() : null;
+const monitor = standalone ? await loadMonitor() : null;
+if (monitor && endpoints?.targets.includes(monitor.id)) throw new Error('Monitoring and endpoint target IDs must be distinct.');
+const interop = monitor ? { inspect: (target, record) => target === monitor.id ? monitor.inspect(target, record) :
+  endpoints ? endpoints.inspect(target, record) : Promise.reject(Object.assign(new Error('Unknown configured inspection target.'), { statusCode: 403 })) } : endpoints;
+const developer = standalone ? createDeveloper({ directory: dataDir, profile, edition, assist, persist, readRun, interop }) : null;
+let environment = { target: 'ISAIAH · synthetic only', runtime: 'Native AI Hub · ' + runtime.model, connection: 'Checking local services…', ready: false };
 let healthCheck;
 function refreshHealth() {
   healthCheck ??= runtime.health().then(result => { environment = result; }).finally(() => { healthCheck = undefined; });
@@ -101,9 +112,9 @@ async function assist(kind, context, guidance = '') {
   control = { run, controller, providerSignal: controller.signal };
   const timer = setTimeout(() => controller.abort(), ceilings.elapsedSeconds * 1000);
   try {
-    const result = await runtime.iris('POST', '/developer/assist', { runId: run.id, kind, context: JSON.stringify(context), guidance });
+    const result = await runtime.iris('POST', '/developer/assist', { runId: run.id, kind, context: JSON.stringify(context), guidance, model: runtime.model });
     if (!run.metrics.modelResponses) throw new Error('No native AI Hub model response was recorded.');
-    return { id: run.id, started: run.started, metrics: run.metrics, result };
+    return { id: run.id, started: run.started, metrics: run.metrics, result, provider: runtime.provider };
   } finally {
     clearTimeout(timer);
     controller.abort();
@@ -136,7 +147,7 @@ async function execute(current, objective) {
     await persist(run);
     if (controller.signal.aborted) throw new Error('Investigation stopped before production dispatch.');
     current.dispatched = true;
-    const result = await runtime.iris('POST', '/run', { runId: run.id, incident: run.incident, objective, guidance: knowledge.guidance });
+    const result = await runtime.iris('POST', '/run', { runId: run.id, incident: run.incident, objective, guidance: knowledge.guidance, model: runtime.model });
     if (controller.signal.aborted) throw new Error('Investigation stopped before verification.');
     run.decision = result.decision;
     run.branchReceipt = result.branchReceipt;
@@ -227,10 +238,11 @@ const server = createServer(async (req, res) => {
     try {
       const source = await readRun(evidenceId);
       if (!source) return json(res, 404, { error: 'Source run unavailable.' });
-      return json(res, 200, source);
+      return json(res, 200, source.kind === 'trace' ? { ...source, observations: traceObservations(source.verification?.independent) } :
+        (developer ? developer.present(source) : source));
     } catch { return json(res, 500, { error: 'Source run could not be read.' }); }
   }
-  const developerAction = developer && /^\/api\/developer\/(trace|explain|review|preferences|sources|card)$/.exec(req.url)?.[1];
+  const developerAction = developer && /^\/api\/developer\/(trace|explain|review|preferences|sources|card|inspect|context)$/.exec(req.url)?.[1];
   if (req.method !== 'POST' || !(developerAction || ['/api/start', '/api/cancel', '/api/repair', '/api/learning'].includes(req.url) ||
       (applySandbox && req.url === '/api/changes'))) {
     return json(res, 404, { error: 'Route unavailable.' });

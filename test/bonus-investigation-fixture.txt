@@ -1,0 +1,24 @@
+; Test-only production: actual Intake and Investigation, with a fake agent.
+set before=##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")
+set sc=##class(Ens.Director).CreateBusinessService("Intake",.svc) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set run="66666666-6666-4666-8666-666666666666",^IsaiahRun(run,"incident")="R29",^IsaiahRun(run,"deadline")=##class(Isaiah.State).Now()+300
+set req=##class(Isaiah.Request).%New(),req.Action="investigate",req.Incident="R29",req.RunId=run,req.Payload="{}"
+set sc=svc.ProcessInput(req,.out) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set result={}.%FromJSON(out.Payload) if (result.decision.branch'="review") || (result.branchReceipt.mode'="review") write "FAIL R29 branch",! halt
+set trace=##class(Isaiah.State).Fixture("R29"),independent={"incident":"R29","incomingPriority":(trace.ingress.priority),"requested":(trace.ingress.requestedDestination),"predicate":(trace.router.matchPriority),"selected":(trace.router.selectedDestination),"receipts":(trace.receipts),"branch":(result.branchReceipt)}
+write "R29RESULT ",out.Payload,!
+write "R29AUDIT ",##class(Isaiah.State).Status(run).tools.%ToJSON(),!
+write "R29INDEPENDENT ",independent.%ToJSON(),!
+for attempt=1:1:15 { quit:##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")>before  hang 1 }
+if ##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")'=(before+1) write "FAIL review task",! halt
+for attempt=1:1:15 { quit:##class(%File).Exists("/tmp/isaiah-review-outbox/"_run_".json")  hang 1 }
+if '##class(%File).Exists("/tmp/isaiah-review-outbox/"_run_".json") write "FAIL outbox",! halt
+set after=##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")
+set run="77777777-7777-4777-8777-777777777777",^IsaiahRun(run,"incident")="R17",^IsaiahRun(run,"deadline")=##class(Isaiah.State).Now()+300
+set req=##class(Isaiah.Request).%New(),req.Action="investigate",req.Incident="R17",req.RunId=run,req.Payload="{}"
+set sc=svc.ProcessInput(req,.out) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set result={}.%FromJSON(out.Payload) if (result.decision.branch'="diagnostic") || (result.branchReceipt.mode'="diagnostic") write "FAIL R17 branch",! halt
+hang 2 if ##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")'=after write "FAIL R17 created review task",! halt
+if ##class(%File).Exists("/tmp/isaiah-review-outbox/"_run_".json") write "FAIL R17 created review notification",! halt
+write "PASS test-agent=fixed-fixture R29=review+workflow+outbox R17=diagnostic+no-review-task",!
+halt

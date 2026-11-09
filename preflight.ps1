@@ -10,6 +10,12 @@ param(
     [Parameter(ParameterSetName = 'Compose')]
     [switch]$Standalone,
 
+    [Parameter(ParameterSetName = 'Compose')]
+    [switch]$ProviderProfile,
+
+    [Parameter(ParameterSetName = 'Compose')]
+    [switch]$ProviderAuth,
+
     [ValidateSet('iris', 'iris-for-health')]
     [string]$Edition = 'iris-for-health',
 
@@ -23,6 +29,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($ProviderAuth -and !$ProviderProfile) { throw 'ProviderAuth requires ProviderProfile.' }
 $PSNativeCommandUseErrorActionPreference = $false
 $hasAction = $false
 $composeMode = $PSCmdlet.ParameterSetName -eq 'Compose'
@@ -69,6 +76,8 @@ if ($composeMode) {
     $compose = @('compose', '-p', $Project, '--project-directory', $PSScriptRoot, '-f', (Join-Path $PSScriptRoot 'compose.yaml'))
     if ($Apply) { $compose += @('-f', (Join-Path $PSScriptRoot 'docker/compose.apply.yaml')) }
     if ($Standalone) { $compose += @('-f', (Join-Path $PSScriptRoot 'docker/compose.standalone.yaml')) }
+    if ($ProviderProfile) { $compose += @('-f', (Join-Path $PSScriptRoot 'docker/compose.provider.yaml')) }
+    if ($ProviderAuth) { $compose += @('-f', (Join-Path $PSScriptRoot 'docker/compose.provider-auth.yaml')) }
     if (!(Read-Docker @('compose', 'version', '--short'))) {
         Report ACTION Compose 'Enable the Docker Compose plugin.'
     } else {
@@ -173,6 +182,16 @@ halt
 $modelPort = if ($Standalone) { 18758 } elseif ($Apply) { 18752 } elseif ($composeMode) { 18746 } else { 18744 }
 $modelCommand = if ($Standalone) { '.\start-model.ps1 -Standalone' } elseif ($Apply) { '.\start-model.ps1 -Apply' } elseif ($composeMode) { '.\start-model.ps1 -Compose' } else { '.\start-model.ps1' }
 $modelDigest = '9ba9cc2b4e02463b933096090530aef679d534dd91ecc9afadfb2dbfdc59f3c5'
+if ($ProviderProfile) {
+    $profileFile = Join-Path $PSScriptRoot '.local/provider-profile.json'
+    if (!(Test-Path -LiteralPath $profileFile -PathType Leaf)) {
+        Report ACTION 'Provider profile' 'Create the private profile file described in docs/provider-profiles.md.'
+    } elseif ($ProviderAuth -and !(Test-Path -LiteralPath (Join-Path $PSScriptRoot '.local/provider-credential.txt') -PathType Leaf)) {
+        Report ACTION 'Provider credential' 'Create the separate private provider credential file.'
+    } else {
+        Report DEFERRED 'Provider profile' 'The running app validates the selected local endpoint and model; no inference requested.'
+    }
+} else {
 try {
     $version = Read-Loopback $modelPort '/api/version'
     $tags = Read-Loopback $modelPort '/api/tags'
@@ -184,6 +203,7 @@ try {
     }
 } catch {
     Report ACTION 'Model route' "Ollama did not answer its version and model probes on port $modelPort. Start it with $modelCommand."
+}
 }
 if ($appRunning) {
     $app = try { Read-Loopback $(if ($Standalone) { 18757 } else { 18747 }) '/api/state' } catch { $null }

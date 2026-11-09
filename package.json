@@ -1,11 +1,38 @@
 {
   "name": "isaiah",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
-  "bin": { "isaiah": "standalone/cli.mjs" },
-  "files": ["server.mjs", "runtime.mjs", "verifier.mjs", "learning.mjs", "learning/", "standalone/", "web/"],
-  "engines": { "node": "24.21.0" },
-  "scripts": { "start": "node server.mjs", "test": "node --test" }
+  "bin": {
+    "isaiah": "standalone/cli.mjs"
+  },
+  "files": [
+    "NOTICE.md",
+    "docs/mcp-readonly.md",
+    "docs/interoperability-expansion.md",
+    "docs/interop-connections.md",
+    "docs/provider-profiles.md",
+    "docs/provider-bridge-testing.md",
+    "docs/chatgpt-plan.md",
+    "server.mjs",
+    "runtime.mjs",
+    "provider-profiles.mjs",
+    "verifier.mjs",
+    "learning.mjs",
+    "learning/",
+    "standalone/",
+    "chatgpt/",
+    "web/"
+  ],
+  "engines": {
+    "node": "24.21.0"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "jose": "6.1.0"
+  }
 }

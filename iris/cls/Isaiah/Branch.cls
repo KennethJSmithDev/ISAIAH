@@ -28,6 +28,19 @@ Method Record(input As Isaiah.Request, Output output As Isaiah.Response) As %Sta
         Set status = $$$ERROR($$$GeneralError,"Branch dispatch rejected by scope.")
     }
     Lock -^IsaiahRun(run)
+    // Queue advisory work after recording the branch. A work item never approves a change.
+    If $$$ISOK(status), ..Mode="review" {
+        Set status = ..SendRequestAsync("HumanReview",input)
+        If $$$ISOK(status) {
+            // A timeout can leave a queued operation in flight: pending is not failure or delivery.
+            Set ^IsaiahRun(run,"notification")="pending"
+            Set notifyStatus = ..SendRequestSync("ReviewOutbox",input,.notification,3)
+            Set notificationState = $Get(^IsaiahRun(run,"notification"),"pending")
+            If notificationState="pending" Set notificationState="unknown"
+            Set receipt.notification = {"status":(notificationState),"scope":"local synthetic outbox","approval":false}
+            Set output.Payload = {"decision":(decision),"branchReceipt":(receipt)}.%ToJSON()
+        }
+    }
     Return status
 }
 

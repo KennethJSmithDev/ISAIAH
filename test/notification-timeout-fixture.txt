@@ -1,0 +1,15 @@
+; Run ONLY in a disposable test production with the slow test-only outbox operation.
+set run="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",before=##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")
+if $data(^IsaiahRun(run)) write "FAIL run exists",! halt
+set ^IsaiahRun(run,"incident")="R29",^IsaiahRun(run,"deadline")=##class(Isaiah.State).Now()+300
+set sc=##class(Ens.Director).CreateBusinessService("Intake",.svc) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set req=##class(Isaiah.Request).%New(),req.Action="branch",req.Incident="R29",req.RunId=run,req.Payload="{""branch"":""review""}"
+set sc=svc.SendRequestSync("Review",req,.out,12) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set result={}.%FromJSON(out.Payload) if result.branchReceipt.notification.status'="unknown" write "FAIL uncertain response not unknown",! halt
+if $get(^IsaiahRun(run,"notification"))'="pending" write "FAIL pending not retained",! halt
+for i=1:1:12 { quit:$get(^IsaiahRun(run,"notification"))="written"  hang 1 }
+if $get(^IsaiahRun(run,"notification"))'="written" write "FAIL eventual result not retained",! halt
+if '##class(%File).Exists("/tmp/isaiah-review-outbox/"_run_".json") write "FAIL eventual notice missing",! halt
+if ##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")'=(before+1) write "FAIL unexpected task count",! halt
+write "PASS response=unknown eventual=written notice=present tasks=1 no-auto-retry",!
+halt

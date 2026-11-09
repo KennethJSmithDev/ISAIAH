@@ -21,6 +21,11 @@ XData ProductionDefinition
   <Item Name="Review" ClassName="Isaiah.Branch" PoolSize="1" Enabled="true">
     <Setting Target="Host" Name="Mode">review</Setting>
   </Item>
+  <Item Name="HumanReview" ClassName="Isaiah.HumanReview" PoolSize="1" Enabled="true"/>
+  <Item Name="IsaiahReviewers" ClassName="EnsLib.Workflow.Operation" PoolSize="1" Enabled="true">
+    <Setting Target="Host" Name="AutoCreateRole">1</Setting>
+  </Item>
+  <Item Name="ReviewOutbox" ClassName="Isaiah.ReviewOutbox" PoolSize="1" Enabled="true"/>
 </Production>
 }
 }

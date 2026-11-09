@@ -45,8 +45,10 @@ services:
       retries: 4
     secrets: [isaiah-credentials]
     volumes:
+      - isaiah-home:/home/node
       - ./server.mjs:/opt/isaiah/server.mjs:ro
       - ./runtime.mjs:/opt/isaiah/runtime.mjs:ro
+      - ./provider-profiles.mjs:/opt/isaiah/provider-profiles.mjs:ro
       - ./learning.mjs:/opt/isaiah/learning.mjs:ro
       - ./verifier.mjs:/opt/isaiah/verifier.mjs:ro
       - ./standalone:/opt/isaiah/standalone:ro
@@ -55,3 +57,6 @@ services:
 secrets:
   isaiah-credentials:
     file: ./.local/compose-credentials.json
+
+volumes:
+  isaiah-home:

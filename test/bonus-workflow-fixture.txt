@@ -1,0 +1,35 @@
+; Run ONLY in a disposable ISAIAH namespace with the candidate production running.
+; This injects a synthetic decision and uses the current sandbox account as reviewer.
+set run="44444444-4444-4444-8444-444444444444",subject="ISAIAH synthetic R29 review "_run
+if $data(^IsaiahRun(run)) write "FAIL fixture run already exists",! halt
+if ##class(%File).Exists("/tmp/isaiah-review-outbox/"_run_".json") write "FAIL fixture outbox already exists",! halt
+set sc=##class(EnsLib.Workflow.UserDefinition).CreateUser($username,"Synthetic sandbox reviewer") if $SYSTEM.Status.IsError(sc),'##class(EnsLib.Workflow.UserDefinition).%ExistsId($username) do $SYSTEM.Status.DisplayError(sc) halt
+if '##class(EnsLib.Workflow.RoleMembership).IDExists("IsaiahReviewers",$username) { set member=##class(EnsLib.Workflow.RoleMembership).%New(),member.Role=##class(EnsLib.Workflow.RoleDefinition).%OpenId("IsaiahReviewers"),member.User=##class(EnsLib.Workflow.UserDefinition).%OpenId($username),sc=member.%Save() if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt }
+set activeBefore=##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers"),userBefore=##class(EnsLib.Workflow.Engine).CountTasksForCurrentUser(),changeBefore=$get(^IsaiahChange("config"))
+set ^IsaiahRun(run,"incident")="R29",^IsaiahRun(run,"deadline")=##class(Isaiah.State).Now()+3600
+set sc=##class(Ens.Director).CreateBusinessService("Intake",.svc) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set req=##class(Isaiah.Request).%New(),req.Action="branch",req.Incident="R29",req.RunId=run,req.Payload="{""branch"":""review""}"
+if ##class(Isaiah.ReviewGate).Valid(req) write "FAIL unrecorded branch accepted",! halt
+set req.Incident="R17" if ##class(Isaiah.ReviewGate).Valid(req) write "FAIL out-of-scope incident accepted",! halt
+set req.Incident="R29"
+set adapter=##class(Isaiah.ReviewFileAdapter).%New(),sc=adapter.WriteNotice("../invalid") if '$SYSTEM.Status.IsError(sc) write "FAIL invalid outbox path accepted",! halt
+set sc=svc.SendRequestSync("ReviewOutbox",req,.out,10) if '$SYSTEM.Status.IsError(sc) write "FAIL unrecorded notification accepted",! halt
+set sc=svc.SendRequestSync("Review",req,.out,10) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if '##class(Isaiah.ReviewGate).Valid(req) write "FAIL valid review rejected",! halt
+for attempt=1:1:15 { quit:##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")>activeBefore  hang 1 }
+if ##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")'=(activeBefore+1) write "FAIL task missing",! halt
+for attempt=1:1:15 { quit:##class(%File).Exists("/tmp/isaiah-review-outbox/"_run_".json")  hang 1 }
+if '##class(%File).Exists("/tmp/isaiah-review-outbox/"_run_".json") write "FAIL notification missing",! halt
+if ##class(EnsLib.Workflow.Engine).CountTasksForCurrentUser()'=(userBefore+1) write "FAIL role worklist missing",! halt
+set r=##class(%SQL.Statement).%ExecDirect(,"SELECT ID FROM EnsLib_Workflow.TaskResponse WHERE %Subject = ?",subject)
+if 'r.%Next() write "FAIL task identity missing",! halt
+set taskid=r.%Get("ID"),task=##class(EnsLib.Workflow.TaskResponse).%OpenId(taskid)
+if task.%RoleName'="IsaiahReviewers" write "FAIL wrong task role",! halt
+set sc=svc.SendRequestSync("ReviewOutbox",req,.out,10) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set sc=##class(EnsLib.Workflow.Engine).AssignTask(task,$username,.count) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set sc=##class(EnsLib.Workflow.Engine).CompleteTask(task,"Reviewed") if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+if task.%Action'="Reviewed" write "FAIL completion action",! halt
+if $get(^IsaiahChange("config"))'=changeBefore write "FAIL change configuration modified",! halt
+if $data(^IsaiahChange("record")) write "FAIL unexpected change record",! halt
+write "PASS run=",run," task=",taskid," worklist-visible=1 completed=Reviewed duplicate-notice=accepted change-records=0",!
+halt

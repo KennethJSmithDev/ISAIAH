@@ -1,0 +1,17 @@
+; Run in the disposable test production with the local outbox deliberately unwritable.
+set run="88888888-8888-4888-8888-888888888888"
+if $data(^IsaiahRun(run)) write "FAIL run exists",! halt
+set before=##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers"),^IsaiahRun(run,"incident")="R29",^IsaiahRun(run,"deadline")=##class(Isaiah.State).Now()+300
+set sc=##class(Ens.Director).CreateBusinessService("Intake",.svc) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set req=##class(Isaiah.Request).%New(),req.Action="branch",req.Incident="R29",req.RunId=run,req.Payload="{""branch"":""review""}"
+set sc=svc.SendRequestSync("Review",req,.out,30) if $SYSTEM.Status.IsError(sc) do $SYSTEM.Status.DisplayError(sc) halt
+set data={}.%FromJSON(out.Payload) if data.branchReceipt.notification.status'="failed" write "FAIL failure not visible",! halt
+if $get(^IsaiahRun(run,"notification"))'="failed" write "FAIL failure not retained",! halt
+if ##class(%File).Exists("/tmp/isaiah-review-outbox/"_run_".json") write "FAIL unexpected notice",! halt
+for i=1:1:15 { quit:##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers")>before  hang 1 }
+set after=##class(EnsLib.Workflow.Engine).BamActiveTasks("IsaiahReviewers") if after'=(before+1) write "FAIL expected one review task",! halt
+set ^IsaiahTest("taskCount")=after,^IsaiahTest("change")=$get(^IsaiahChange("config"))
+set sc=##class(Isaiah.ReviewGate).Retry(run) if '$SYSTEM.Status.IsError(sc) write "FAIL retry succeeded while unwritable",! halt
+if $get(^IsaiahRun(run,"notification"))'="failed" write "FAIL failed retry state",! halt
+write "PASS notification=failed visible-and-retained tasks=1 no-notice retry=refused-unwritable",!
+halt

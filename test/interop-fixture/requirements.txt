@@ -1,0 +1,2 @@
+# Optional synthetic DICOM fixture qualification only; not a harness runtime dependency.
+pydicom==3.0.1

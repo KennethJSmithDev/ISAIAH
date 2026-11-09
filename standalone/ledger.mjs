@@ -25,14 +25,23 @@ export function openLedger(directory) {
     if (run?.kind !== 'trace' || run.verification?.status !== 'pass') throw new Error('A verified session trace is required.');
     const scope = run.compatibility;
     const guidance = 'Compare the message header ID, source, target, and recorded status in that order. Require a separate receiving-system receipt for a delivery claim.';
+    return proposeContent(scope, run.id, guidance);
+  }
+  function proposeContent(scope, evidence, guidance) {
     return transaction(() => {
       const current = use(scope);
       if (current?.guidance === guidance) return { status: 'unchanged', revision: current.id };
       const parent = active(scope);
-      const id = createHash('sha256').update(JSON.stringify([scope, parent, run.id, guidance])).digest('hex').slice(0, 24);
-      db.prepare('INSERT OR IGNORE INTO skill VALUES (?,?,?,?,?,?)').run(id, scope, parent, run.id, guidance, 'proposed');
+      const id = createHash('sha256').update(JSON.stringify([scope, parent, evidence, guidance])).digest('hex').slice(0, 24);
+      db.prepare('INSERT OR IGNORE INTO skill VALUES (?,?,?,?,?,?)').run(id, scope, parent, evidence, guidance, 'proposed');
       return { status: 'proposed', revision: id, proposal: db.prepare('SELECT * FROM skill WHERE id=?').get(id) };
     });
+  }
+  function proposeContext(run) {
+    if (run?.kind !== 'trace' || run.verification?.status !== 'pass' || !run.compatibility || !run.verification.independent?.target) {
+      throw new Error('A retained verified trace is required for a context proposal.');
+    }
+    return proposeContent('context-v1/' + run.compatibility, run.id, JSON.stringify(targetContext(run.verification.independent.target)));
   }
   function review(scope, id, action) {
     return transaction(() => {
@@ -61,8 +70,15 @@ export function openLedger(directory) {
     return db.prepare('SELECT id,title,content,metadata FROM source_text WHERE source_text MATCH ? ORDER BY rank LIMIT 32')
       .all(terms.map(term => `"${term}"`).join(' OR ')).map(({ metadata, ...source }) => ({ ...source, ...JSON.parse(metadata) }));
   }
-  return { use, propose, review, findSources, importSources: sources => transaction(() => sources.forEach(putSource)),
+  return { use, propose, proposeContext, review, findSources, importSources: sources => transaction(() => sources.forEach(putSource)),
     preference: key => db.prepare('SELECT value FROM teaching_pref WHERE key=?').get(key)?.value,
     remember: (key, value) => db.prepare('INSERT INTO teaching_pref VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, value),
     close: () => db.close() };
+}
+
+// Stable target facts only. Session IDs and model prose are not reusable environment context.
+export function targetContext(target) {
+  const fields = ['instance','namespace','production','build','edition','nativeHub'];
+  if (!target || fields.some(field => target[field] === undefined)) throw new Error('Target context is incomplete.');
+  return Object.fromEntries(fields.map(field => [field,target[field]]));
 }
