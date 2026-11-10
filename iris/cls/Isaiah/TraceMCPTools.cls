@@ -9,6 +9,7 @@ XData Definition [ MimeType = application/xml ]
   <Tool Name="ReadSessionTrace" Method="ReadSessionTrace"/>
   <Tool Name="ReadQueueSnapshot" Method="ReadQueueSnapshot"/>
   <Tool Name="ReadComponentSnapshot" Method="ReadComponentSnapshot"/>
+  <Tool Name="ReadMethodSource" Method="ReadMethodSource"/>
 </ToolSet>
 }
 
@@ -83,5 +84,37 @@ ClassMethod ReadComponentSnapshot(instance As %String, namespace As %String, pro
     Set audit=##class(Isaiah.TraceMCPPolicy).AuditComponent("allowed")
     If $$$ISERR(audit) { Throw ##class(%Exception.General).%New("MCP audit unavailable; component not returned") }
     Return {"target":(target),"component":(config),"kind":"component-config-snapshot","observedAt":($ZTIMESTAMP_""),"audit":"recorded","authority":"explicit-component-grant"}
+}
+
+/// Read one explicitly granted declared method without invoking it, compiling it or exporting dependencies.
+/// instance: Exact configured target identity.
+/// namespace: Exact IRIS namespace.
+/// production: Exact active production.
+/// className: Exact operator-granted application class.
+/// methodName: Exact operator-granted declared method.
+ClassMethod ReadMethodSource(instance As %String, namespace As %String, production As %String, className As %String, methodName As %String) As %DynamicObject
+{
+    If '##class(Isaiah.TraceMCPPolicy).AllowsMethod(instance,namespace,production,className,methodName) {
+        Do ##class(Isaiah.TraceMCPPolicy).AuditMethod("denied")
+        Throw ##class(%Exception.General).%New("MCP source scope denied")
+    }
+    Set owner=##class(%Dictionary.ClassDefinition).%OpenId(className)
+    If '$IsObject(owner) { Throw ##class(%Exception.General).%New("Approved class source unavailable") }
+    If owner.Methods.Count()>256 { Throw ##class(%Exception.General).%New("Approved class exceeds method lookup bound") }
+    Set method=""
+    For i=1:1:owner.Methods.Count() {
+        Set candidate=owner.Methods.GetAt(i)
+        If candidate.Name=methodName { Set method=candidate Quit }
+    }
+    If '$IsObject(method) || '$IsObject(method.Implementation) { Throw ##class(%Exception.General).%New("Approved declared method unavailable") }
+    Set stream=method.Implementation
+    Do stream.Rewind()
+    Set source=stream.Read(16001)
+    If $Length(source)>16000 { Throw ##class(%Exception.General).%New("Approved method exceeds source bound") }
+    If '##class(Isaiah.TraceMCPPolicy).AllowsMethod(instance,namespace,production,className,methodName) { Throw ##class(%Exception.General).%New("Source scope changed during read") }
+    Set target=##class(Isaiah.TraceApi).TargetFor(instance)
+    Set audit=##class(Isaiah.TraceMCPPolicy).AuditMethod("allowed")
+    If $$$ISERR(audit) { Throw ##class(%Exception.General).%New("MCP audit unavailable; source not returned") }
+    Return {"target":(target),"className":(className),"methodName":(methodName),"language":(method.Language),"source":(source),"kind":"method-source-snapshot","observedAt":($ZTIMESTAMP_""),"audit":"recorded","authority":"explicit-method-grant","executed":0,"compileClaim":0}
 }
 }

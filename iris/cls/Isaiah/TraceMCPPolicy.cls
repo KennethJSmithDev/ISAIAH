@@ -35,6 +35,18 @@ ClassMethod AllowsComponent(instance As %String, namespace As %String, productio
     Return ..AllowsItem(instance,namespace,production,component,"component")
 }
 
+ClassMethod AllowsMethod(instance As %String, namespace As %String, production As %String, className As %String, methodName As %String) As %Boolean
+{
+    If (className="") || (methodName="") || ($Translate(className,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.")'="") || ($Translate(methodName,"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")'="") { Return 0 }
+    Return ..AllowsItem(instance,namespace,production,className_":"_methodName,"method")
+}
+
+ClassMethod AuditMethod(outcome As %String) As %Status
+{
+    Try { Return $SYSTEM.Security.Audit("ISAIAH","MCP","TraceAccess","method;"_outcome,"Scoped MCP source access") }
+    Catch ex { Return $$$ERROR($$$GeneralError,"MCP audit unavailable") }
+}
+
 ClassMethod AllowsItem(instance As %String, namespace As %String, production As %String, queue As %String, kind As %String) As %Boolean [ Private ]
 {
     Set principal=$Get(^IsaiahTrace("mcp","principal"))
@@ -75,6 +87,10 @@ Method %CanExecute(toolref As %String, call As %DynamicObject, metadata As %Dyna
         If call.%Get("name")="ReadComponentSnapshot" {
             Set args=call.%Get("arguments")
             Set allowed=##class(Isaiah.TraceMCPPolicy).AllowsComponent(args.%Get("instance",""),args.%Get("namespace",""),args.%Get("production",""),args.%Get("component",""))
+        }
+        If call.%Get("name")="ReadMethodSource" {
+            Set args=call.%Get("arguments")
+            Set allowed=##class(Isaiah.TraceMCPPolicy).AllowsMethod(args.%Get("instance",""),args.%Get("namespace",""),args.%Get("production",""),args.%Get("className",""),args.%Get("methodName",""))
         }
     } Catch ex { Set allowed=0 }
     If 'allowed {

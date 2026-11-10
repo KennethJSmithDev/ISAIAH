@@ -5,6 +5,7 @@ import { createTeaching } from './teaching.mjs';
 import { traceObservations } from './trace-observations.mjs';
 import { randomUUID } from 'node:crypto';
 import { groundTraceLesson } from './trace-teaching.mjs';
+import { createProjectWorkflow } from './project-workflow.mjs';
 
 export async function developerProfile(compose) {
   const path = compose ? '/run/secrets/isaiah-developer' : process.env.ISAIAH_DEV_PROFILE;
@@ -25,8 +26,9 @@ function checkEndpoint(address, path, compose) {
       !(url.protocol === 'https:' || (url.protocol === 'http:' && local) || internal)) throw new Error('Invalid developer endpoint.');
 }
 
-export function createDeveloper({ directory, profile, edition, assist, persist, readRun, interop }) {
+export function createDeveloper({ directory, profile, edition, assist, persist, readRun, interop, project }) {
   const ledger = openLedger(directory);
+  const projectWorkflow = project ? createProjectWorkflow({ project, ledger, directory, persist, readRun, assist }) : null;
   const teaching = createTeaching(ledger, edition);
   const scope = profile ? [edition, '154U', profile.instance, profile.namespace, profile.production, 'trace-v1'].join('/') : '';
 
@@ -90,6 +92,10 @@ export function createDeveloper({ directory, profile, edition, assist, persist, 
   }
 
   async function handle(action, data) {
+    if (action === 'project') {
+      if (!projectWorkflow) throw Object.assign(new Error('No operator-selected project is configured.'), { statusCode: 409 });
+      return projectWorkflow.handle(data);
+    }
     if (action === 'context') {
       if (!scope) throw new Error('Configure an approved target before reviewing context.');
       if (data.action === 'propose') {

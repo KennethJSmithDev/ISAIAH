@@ -2,6 +2,8 @@
 
 This optional interface exposes one existing ISAIAH trace projection to an authenticated MCP client. It reads up to 40 message headers for one pre-authorized session. It does not start an investigation, call a model, verify delivery, approve a procedure, or apply a rule. A recorded hop is not a destination receipt.
 
+This section describes `ReadSessionTrace`. The ToolSet's separate queue/component reads retain their own grants; the local developer prototype adds [exact declared-method source inspection](developer-workflow.md#read-native-method-source), also separately granted. No trace grant implies authority for those other reads, compilation or source changes.
+
 The tool requires four strings: `instance`, `namespace`, `production`, and `session`. They must match the configured trace identity, the actual namespace and active production, and an existing `^IsaiahTrace("session",session)` first-header grant. The existing first-header consistency check and bounded SQL projection remain authoritative. Both the MCP policy and tool check scope against the authenticated IRIS principal.
 
 ## Operator setup
@@ -39,4 +41,4 @@ An authenticated, in-scope call returns `{target, session, hops}` from the same 
 
 Wrong credentials, another principal, wrong target or production, an unapproved or malformed session, and unknown tools are denied. A missing/incomplete/over-limit projection or failed audit returns an error without trace data. The actual per-tool audit call requires auditing and the event to remain enabled; administrators should monitor audit health and independently check that the installation's security configuration has not drifted.
 
-This local candidate was tested on a disposable IRIS for Health Community Build 154U instance, with a dedicated synthetic production and the vendor stdio bridge. Consult the private qualification record for exact source hashes, read-only role checks, negative cases and limitations. The optional module is not automatically enrolled on an existing instance and has not been qualified against other IRIS editions or builds.
+This interface was tested on a disposable IRIS for Health Community Build 154U instance, with a dedicated synthetic production and the vendor stdio bridge. See the [qualification scope](qualification.md) for the evidence boundaries and limitations. The optional module is not automatically enrolled on an existing instance and has not been qualified against other IRIS editions or builds.

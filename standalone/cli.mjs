@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, lstat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -8,6 +8,8 @@ import { connectionPreset } from './connections.mjs';
 import { loadProviderProfile } from '../provider-profiles.mjs';
 import { parseArgs } from 'node:util';
 import { standalonePort } from './loopback.mjs';
+import { exportProject } from './export-project.mjs';
+import { projectPatchDiff } from './project.mjs';
 
 const origin = 'http://127.0.0.1:' + standalonePort();
 const usage = `ISAIAH standalone developer harness
@@ -25,6 +27,15 @@ const usage = `ISAIAH standalone developer harness
   isaiah skill <accept|restore> <revision>
   isaiah context propose <verified-trace-run>
   isaiah context <accept|restore> <revision>
+  isaiah project map
+  isaiah project design --objective <synthetic-HL7-to-FHIR-task>
+  isaiah project export <retained-plan-run> --output <new-directory>
+  isaiah project read --record <approved-key>
+  isaiah project context <propose|accept|restore> <run-or-revision>
+  isaiah project patch propose --record <approved-key> --replacement <local-file>
+  isaiah project patch show <patch-run>
+  isaiah project patch <accept|apply|reconcile> <run> <revision>
+  isaiah project patch reverse <applied-run>
   isaiah provider show
   isaiah provider preset <ollama|compatible|chatgpt> --profile <new-private-file> [--model <id>] [--port <port>] [--compose]
     Experimental compatible bridges: --account-name <name> --account-origin <loopback-origin>
@@ -48,10 +59,35 @@ try {
     session: { type: 'string' }, topic: { type: 'string' }, question: { type: 'string' }, live: { type: 'boolean' },
     target: { type: 'string' }, record: { type: 'string' }, model: { type: 'string' },
     profile: { type: 'string' }, port: { type: 'string' }, compose: { type: 'boolean' }, run: {type:'string'},
-    'account-name': {type:'string'}, 'account-origin': {type:'string'}
+    'account-name': {type:'string'}, 'account-origin': {type:'string'}, replacement: {type:'string'}, objective: {type:'string'}, output: {type:'string'}
   } });
   const [action, id] = positionals;
   if (!command || command === '--help' || command === 'help') console.log(usage);
+  else if (command === 'project' && action === 'export' && positionals.length === 2 && values.output && Object.keys(values).length === 1) {
+    output(await exportProject(await request('runs/' + encodeURIComponent(id)),values.output));
+  }
+  else if (command === 'project' && action === 'patch' && id === 'show' && positionals.length === 3 && !Object.keys(values).length) {
+    const run = await request('runs/' + encodeURIComponent(positionals[2]));
+    if (run.kind !== 'project-patch') throw new Error('Choose a retained project patch.');
+    output({ id:run.id, recordedOutcome:run.patchReview.status, phase:run.phase, checks:run.patch.checks, before:run.patch.before, after:run.patch.after, diff:projectPatchDiff(run.patch) });
+  }
+  else if (command === 'project') {
+    let input;
+    if (action === 'map' && args.length === 1) input = { operation: 'map' };
+    else if (action === 'design' && positionals.length === 1 && values.objective && Object.keys(values).length === 1) input = { operation:'design', objective:values.objective };
+    else if (action === 'read' && positionals.length === 1 && values.record && Object.keys(values).length === 1) input = { operation: 'read', key: values.record };
+    else if (action === 'context' && ['propose','accept','restore'].includes(id) && positionals.length === 3 && !Object.keys(values).length) {
+      input = { operation: 'context-' + id, ...(id === 'propose' ? { runId: positionals[2] } : { revision: positionals[2] }) };
+    } else if (action === 'patch' && id === 'propose' && positionals.length === 2 && values.record && values.replacement && Object.keys(values).length === 2) {
+      const replacement = await lstat(values.replacement);
+      if (!replacement.isFile() || replacement.isSymbolicLink() || replacement.size > 16000) throw new Error('Select a regular replacement file up to 16,000 bytes.');
+      input = { operation: 'patch-propose', key: values.record, content: await readFile(values.replacement,'utf8') };
+    } else if (action === 'patch' && ['accept','apply','reconcile'].includes(id) && positionals.length === 4 && !Object.keys(values).length) {
+      input = { operation: 'patch-' + id, runId: positionals[2], revision: positionals[3] };
+    } else if (action === 'patch' && id === 'reverse' && positionals.length === 3 && !Object.keys(values).length) input = { operation: 'patch-reverse', runId: positionals[2] };
+    else throw new Error(usage);
+    output(await request('developer/project',input));
+  }
   else if (command === 'provider' && action === 'show' && args.length === 1) {
     output({ profile: await loadProviderProfile({standalone:true,compose:process.env.ISAIAH_COMPOSE==='1'}), restartRequiredForSelection:true });
   } else if (command === 'provider' && action === 'preset' && positionals.length === 2 && values.profile &&

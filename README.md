@@ -1,5 +1,7 @@
 # ISAIAH 0.1.1
 
+> **Developer preview:** this source extends the 0.1.1 foundation with [scoped source inspection, reviewed patches and one constrained native development example](docs/developer-workflow.md). This is a source update, not a new registry package or a general application builder. The existing browser teaching-promotion gate remains in force.
+
 <p align="center">
   <a href="#start"><strong>Docker Quick Start</strong></a> &nbsp;·&nbsp;
   <a href="#ipm"><strong>IRIS / IPM Install</strong></a> &nbsp;·&nbsp;
@@ -68,9 +70,9 @@ The provisional edit shows retained real native execution in the earlier v0.1.0 
 
 ## What has been qualified
 
-Retained local qualification establishes the synthetic Health Build 154U workflow, including fresh native R17/R29 decisions, scoped tools, independent verification, approved trace/CLI access and guarded R17 apply/rollback. The ChatGPT plan bridge also passed both cases with each of `gpt-6.1-sol` and `gpt-6.1-terra`; the relevant native source is unchanged in this candidate. The source checkpoint passed 18 offline tests, including two optional Hermes tests.
+Retained local qualification establishes the synthetic Health Build 154U workflow, including fresh native R17/R29 decisions, scoped tools, independent verification, approved trace/CLI access and guarded R17 apply/rollback. The ChatGPT plan bridge also passed both cases with each of `gpt-6.1-sol` and `gpt-6.1-terra`; its investigation/provider path is preserved. This developer preview passed 40 offline tests, including both optional Hermes tests in the configured pinned environment. Its new native source-read tool and one constrained mapping proposal have separate qualification; these are not fresh R17/R29 or ChatGPT-provider runs of this source update. See [developer-preview qualification](docs/qualification.md#developer-preview-qualification).
 
-Clean offline IPM archive installation was qualified for an earlier integration snapshot. That archive is not evidence of a newly built 0.1.1 archive containing all later additions. Workflow permissions and notification failures were also checked with controlled fixed-agent fixtures; mobile presentation uses labeled UI transport fixtures. These are distinct from fresh model reasoning. See the [qualification scope](docs/qualification.md). A fresh machine's dependency acquisition and production suitability are not established.
+The published 0.1.1 foundation's 26 native inputs match the archive that passed clean offline IPM 0.1.1 installation on Health Build 154U. Its later source and installed-runtime suites passed 29 tests, superseding the earlier 18-test milestone. The developer preview's 40-test suite is separate: four native classes have since changed, so the foundation archive does not qualify a clean IPM install of this entire preview. Workflow/notification checks used controlled fixed-agent fixtures, and mobile checks used labeled UI transport fixtures. See the [qualification history](docs/qualification.md#qualification-history). Fresh-machine dependency acquisition and production suitability remain unestablished.
 
 ![R17 result from genuine native AI Hub execution in the synthetic ISAIAH interface](docs/media/isaiah-r17.png)
 
@@ -256,13 +258,15 @@ This mutation capability covers one synthetic setting and one local operator key
 
 Root module.xml packages Isaiah.PKG from iris/ as isaiah version 0.1.1, with SystemRequirements Version=">=2026.3" Interoperability="enabled". Required classes are under iris/cls/Isaiah. Compose loads the module into a clean synthetic namespace through IPM.
 
-The registry command is `zpm "install isaiah"`. An administrator can also load the source using IPM 0.10.10 in an authorized Interoperability-enabled namespace.
+The registry command is `zpm "install isaiah"`; as checked November 10, 2026, it installs **0.1.0**, not this 0.1.1 source. A fresh Health Build154U / IPM 0.10.10 client installed that public package and reproduced both deterministic fixture routes without model calls. IPM 0.9+ does not enable the community registry by default. If needed, an administrator can configure it in the intended disposable namespace using `zpm "repo -r -n registry -url https://pm.community.intersystems.com/"`; see the [pinned IPM instructions](https://github.com/intersystems/ipm/blob/v0.10.10/README.md). This changes the client's repository configuration, not ISAIAH's version.
+
+An administrator can instead load the current source using IPM 0.10.10 in an authorized Interoperability-enabled namespace.
 
 ~~~objectscript
 zpm "load /path/to/ISAIAH -nodev"
 ~~~
 
-Module loading installs classes. Permissions, accounts, provider credentials and production startup remain separate administrator responsibilities. Compose provisions its disposable targets. The earlier registry observation identified a different isaiah 0.1.0 baseline in the [public IPM registry](https://pm.community.intersystems.com/packages/isaiah). Registry publication of this 0.1.1 candidate has not been established; use the source-load or Compose route for this candidate. The complete browser/model demonstration uses the Compose setup above.
+Module loading installs classes. Permissions, accounts, provider credentials and production startup remain separate administrator responsibilities. Compose provisions its disposable targets. The [public IPM registry](https://pm.community.intersystems.com/packages/isaiah) lists only 0.1.0, and the 0.1.1 archive endpoint returned 404 on the date above. Use the source-load or Compose route for this 0.1.1 source candidate, subject to its stated qualification limits and migration warning. The complete browser/model demonstration uses the Compose setup above.
 
 ## Offline checks
 
@@ -288,7 +292,7 @@ Use Ctrl+C in the dedicated model terminal. Start the same prepared containers a
 The factual verifier checks the demonstrated synthetic routing/receipt contract. The separate reviewed sender-contract gate restricts the one supported predicate correction; neither establishes an unstated business requirement or authorizes a general production repair. Task-grounded browser teaching is qualified separately in local previews and is not part of this published browser.
 
 
-The qualified scope is the local synthetic Health Build154 workflow. HL7 qualification is in-process AA/AE correlation, not MLLP. FHIR is an authenticated direct R5 repository, not a production-routed endpoint. DICOM is synthetic Orthanc QIDO/WADO, not DIMSE or clinical PACS use. Standard-edition qualification, broad Memory/Context/Skills improvement, arbitrary procedure generation, redesigned browser teaching, companion integration and production use have separate future gates. No measured claim of time saved, improved accuracy or educational benefit is made.
+The qualified scope is the local synthetic Health Build154 workflow. Foundation HL7 qualification is in-process AA/AE correlation, not MLLP; its FHIR inspection accesses an authenticated direct R5 repository. The separate developer-preview example routes one fixed header-only HL7-to-Organization mapping through a production; it does not establish a general production-routed FHIR connector. DICOM is synthetic Orthanc QIDO/WADO, not DIMSE or clinical PACS use. Standard-edition qualification, broad Memory/Context/Skills improvement, arbitrary procedure generation, redesigned browser teaching, companion integration and production use have separate future gates. No measured claim of time saved, improved accuracy or educational benefit is made.
 
 ## License and dependencies
 

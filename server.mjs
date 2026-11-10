@@ -11,6 +11,7 @@ import { standalonePort } from './standalone/loopback.mjs';
 import { traceObservations } from './standalone/trace-observations.mjs';
 import { loadInterop } from './standalone/interop.mjs';
 import { loadMonitor } from './standalone/monitor.mjs';
+import { loadProject } from './standalone/project.mjs';
 
 const compose = process.env.ISAIAH_COMPOSE === '1';
 const repairLocal = !compose && process.env.ISAIAH_REPAIR_LOCAL === '1';
@@ -49,7 +50,7 @@ const savedRuns = (await readdir(runsDir)).filter(name => /^\d{13}-[0-9a-f-]{36}
 for (const name of savedRuns.reverse()) {
   try {
     const candidate = JSON.parse(await readFile(join(runsDir, name), 'utf8'));
-    if (['trace','interop-read','teaching'].includes(candidate.kind)) continue;
+    if (['trace','interop-read','teaching','project-read','project-patch','development-plan'].includes(candidate.kind)) continue;
     latest = candidate;
     if (latest.active) {
       latest.active = latest.cancellable = false;
@@ -70,7 +71,8 @@ const monitor = standalone ? await loadMonitor() : null;
 if (monitor && endpoints?.targets.includes(monitor.id)) throw new Error('Monitoring and endpoint target IDs must be distinct.');
 const interop = monitor ? { inspect: (target, record) => target === monitor.id ? monitor.inspect(target, record) :
   endpoints ? endpoints.inspect(target, record) : Promise.reject(Object.assign(new Error('Unknown configured inspection target.'), { statusCode: 403 })) } : endpoints;
-const developer = standalone ? createDeveloper({ directory: dataDir, profile, edition, assist, persist, readRun, interop }) : null;
+const project = standalone ? await loadProject() : null;
+const developer = standalone ? createDeveloper({ directory: dataDir, profile, edition, assist, persist, readRun, interop, project }) : null;
 let environment = { target: 'ISAIAH · synthetic only', runtime: 'Native AI Hub · ' + runtime.model, connection: 'Checking local services…', ready: false };
 let healthCheck;
 function refreshHealth() {
@@ -242,7 +244,7 @@ const server = createServer(async (req, res) => {
         (developer ? developer.present(source) : source));
     } catch { return json(res, 500, { error: 'Source run could not be read.' }); }
   }
-  const developerAction = developer && /^\/api\/developer\/(trace|explain|review|preferences|sources|card|inspect|context)$/.exec(req.url)?.[1];
+  const developerAction = developer && /^\/api\/developer\/(trace|explain|review|preferences|sources|card|inspect|context|project)$/.exec(req.url)?.[1];
   if (req.method !== 'POST' || !(developerAction || ['/api/start', '/api/cancel', '/api/repair', '/api/learning'].includes(req.url) ||
       (applySandbox && req.url === '/api/changes'))) {
     return json(res, 404, { error: 'Route unavailable.' });
@@ -251,7 +253,7 @@ const server = createServer(async (req, res) => {
     return json(res, 403, { error: 'Request rejected by localhost origin policy.' });
   }
   let input;
-  try { input = (await requestBody(req, developerAction === 'sources' ? 400_000 : 8192)).data; }
+  try { input = (await requestBody(req, developerAction === 'sources' ? 400_000 : developerAction === 'project' ? 40_000 : 8192)).data; }
   catch { return json(res, 400, { error: 'Invalid or oversized JSON request.' }); }
   if (!input || typeof input !== 'object' || Array.isArray(input)) return json(res, 400, { error: 'Expected a JSON object.' });
   if (developerAction) {
