@@ -87,7 +87,9 @@ Open `http://127.0.0.1:8765/` for the interactive demo or `http://127.0.0.1:8765
 
 Retained Health Build 154U qualification covers native R17/R29, independent verification, approved trace access and guarded apply/rollback. The source-read tool and constrained developer example have separate qualification records. [Qualification scope](docs/qualification.md) · [Developer preview](docs/qualification.md#developer-preview-qualification)
 
-The clean offline IPM 0.1.1 install qualified the earlier foundation archive. Four native classes differ in the published preview. The combined preview installation and general existing-installation upgrade remain unqualified. The public registry installation recorded below is for 0.1.0. [Qualification history](docs/qualification.md#qualification-history) · [IPM install](#ipm)
+The current **0.1.1 native IPM archive** passed a clean offline installation on Health Build 154U using all 26 package inputs at `61e6676`. The Interoperability guard refused installation before class loading when Interoperability was disabled. With it enabled, R17 delivered to Standard and R29 recorded Express unavailable followed by Standard fallback. The separate offline deterministic verifier suite passed all three tests. Archive SHA-256 `e14bc43e27e5ee780ea44b38a1930acf33fd9a49e2c466560e5f2ddbdf564036`. [Qualification history](docs/qualification.md#qualification-history)
+
+A complete fresh installation of the current Node, browser and model system and general existing-installation upgrades remain separately unqualified. The public registry installation recorded below covers **0.1.0**. [IPM install](#ipm)
 
 ![R17 result from genuine native AI Hub execution in the synthetic ISAIAH interface](docs/media/isaiah-r17.png)
 
