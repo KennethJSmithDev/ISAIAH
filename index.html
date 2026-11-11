@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ISAIAH | Offline simulation</title>
+  <link rel="stylesheet" href="./app.css">
+  <script type="module" src="./app.js"></script>
+  <script type="module" src="./teaching.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#workspace">Skip to investigation workspace</a>
+<header class="top"><div class="top-inner"><div class="brand"><span class="mark" aria-hidden="true">I</span><div><strong>ISAIAH</strong><small>InterSystems Artificial Intelligence Agentic Harness</small></div></div><span class="version">SIMULATION ONLY</span><nav class="workspace-nav" aria-label="Workspace sections"><a href="#investigation">Investigate</a><a href="#activity-panel">Activity &amp; evidence</a><a href="#authorization">Approval boundary</a><a href="#learning-panel">Learning review</a></nav></div></header>
+<main id="workspace" tabindex="-1">
+  <p class="eyebrow">OFFLINE SIMULATION · NO LIVE IRIS OR MODEL</p>
+  <h1>Investigate a routing incident</h1>
+  <p class="intro">Explore authored synthetic examples. No agent, verifier, IRIS production, real approval, or delivery runs in this simulation.</p>
+  <nav aria-label="ISAIAH surfaces"><a href="./media/">Media gallery</a> · <a href="https://github.com/KennethJSmithDev/ISAIAH">Repository</a> · <a href="https://github.com/KennethJSmithDev/ISAIAH#start">Installation</a></nav>
+  <dl class="environment" aria-label="Execution environment">
+    <div><dt>Target</dt><dd id="target">Checking…</dd></div>
+    <div><dt>Runtime and model</dt><dd id="runtime">Checking…</dd></div>
+    <div><dt>Connection</dt><dd id="connection" role="status">Checking…</dd></div>
+  </dl>
+  
+  <details class="workflow-note"><summary>How this workflow is checked</summary><p>Request → IRIS Interoperability → native AI Hub and scoped evidence tools → agent decision → recorded Diagnostic or Review branch → independent readback and verification.</p><p>A passing check confirms the demonstrated synthetic contract. Applying a change is a separate replay, plan and approval workflow; it is never authorized by an agent recommendation alone.</p></details>
+  <nav class="compact-nav" aria-label="Workspace sections">
+    <button type="button" data-view="investigation" aria-pressed="true">Investigate</button>
+    <button type="button" data-view="activity" aria-pressed="false">Activity &amp; evidence</button>
+    <button type="button" data-view="change" aria-pressed="false">Approval boundary</button>
+    <button type="button" data-view="learning" aria-pressed="false">Learning review</button>
+    <button type="button" data-view="teaching" aria-pressed="false">Teaching example</button>
+  </nav>
+  <div class="workspace" data-mobile-view="investigation">
+    <section id="investigation" data-panel="investigation" class="panel" tabindex="-1" aria-labelledby="investigation-title">
+      <div class="panel-heading"><span class="step" aria-hidden="true">01</span><div><p class="kicker">Define the task</p><h2 tabindex="-1" id="investigation-title">Investigation</h2></div></div>
+      <form id="task-form">
+        <label for="incident">Synthetic incident for the next investigation</label>
+        <select id="incident"><option value="R17">R17 · Routing condition</option><option value="R29">R29 · Destination fallback</option></select>
+        <label for="task">Task objective</label>
+        <textarea id="task" required maxlength="1500" rows="5" aria-describedby="task-hint">Investigate why the synthetic message reached the wrong destination. Inspect the trace and receipts, then recommend the smallest justified correction or review.</textarea>
+        <p id="task-hint" class="hint">Diagnostic reads are scoped to the selected incident. Changing this selection does not change the displayed run. A recommendation does not approve a change.</p>
+        <div class="actions"><button id="start" type="submit" disabled>Start investigation</button><button id="cancel" type="button" disabled>Cancel</button></div>
+      </form>
+      <p id="feedback" role="status"></p>
+      <details><summary>Execution scope &amp; limits</summary><pre id="scope">Waiting for backend state.</pre></details>
+    </section>
+    <section id="activity-panel" data-panel="activity" class="panel evidence-panel" tabindex="-1" aria-labelledby="activity-title">
+      <div class="panel-heading"><span class="step" aria-hidden="true">02</span><div><p class="kicker">Inspect the result</p><h2 tabindex="-1" id="activity-title">Activity and evidence</h2></div></div>
+      <p id="run-status" class="status" role="status">No investigation started.</p><p id="run-identity" class="run-identity">No run selected.</p><p id="branch-identity" class="branch-identity">No branch receipt recorded.</p><p id="run-metrics" class="micro"></p>
+      <ol id="activity" aria-label="Recorded activity"></ol>
+      <div id="outcome"></div>
+      <form id="repair-form" hidden>
+        <label for="repair-value">Replay comparison value</label>
+        <input id="repair-value" required maxlength="16" pattern="[A-Z0-9]{1,16}" aria-describedby="replay-hint">
+        <p id="replay-hint" class="hint">A separate synthetic trace tests this value. Replay does not change the deployed rule.</p>
+        <button id="repair-qualify" type="submit">Qualify repair</button>
+      </form>
+      <div id="repair-outcome"></div>
+      <details><summary>Inspect tool inputs and evidence</summary><pre id="evidence">No evidence recorded.</pre></details>
+    </section>
+    <section id="authorization" data-panel="change" class="panel wide authorization-panel" tabindex="-1" aria-labelledby="authorization-title"><div class="panel-heading"><span class="step" aria-hidden="true">03</span><div><p class="kicker">Consequential actions</p><h2 tabindex="-1" id="authorization-title">Approval boundary</h2></div><span class="boundary-tag">Explicit approval required</span></div><p class="boundary-note">Inspect the sealed plan before approving. Apply and rollback each require their own approval. Controls appear only for the configured synthetic sandbox.</p>
+    <section id="change-panel" class="change-body" hidden>
+      <h3>R17 sandbox change</h3>
+      <p class="hint">Investigations use the original incident traces. This panel shows the deployed revision and checks delivery with a fresh message.</p>
+      <div class="actions">
+        <button id="plan-apply" type="button">Plan apply from passing replay</button>
+        <button id="plan-rollback" type="button">Plan rollback of this apply</button>
+      </div>
+      <label for="change-receipt-id">Plan or receipt ID</label>
+      <div class="receipt-lookup"><input id="change-receipt-id" maxlength="36" autocomplete="off" spellcheck="false"><button id="read-change" type="button">Read receipt</button></div>
+      <p id="change-status" role="status">No change loaded.</p>
+      <form id="approve-form" hidden>
+        <p class="hint">Simulated approval only. No credentials are requested or accepted.</p>
+        <button id="approve-change" type="submit">Simulate approval</button>
+      </form>
+      <div class="actions">
+        <button id="execute-change" type="button">Simulate execution</button>
+        <button id="verify-change" type="button">Show simulated delivery</button>
+      </div>
+      <details><summary>Inspect sealed plan and receipts</summary><pre id="change-evidence">No receipt loaded.</pre></details>
+    </section>
+    </section>
+    <section id="learning-panel" data-panel="learning" class="panel learning" tabindex="-1" aria-labelledby="learning-title">
+      <div class="panel-heading"><span class="step" aria-hidden="true">04</span><div><p class="kicker">Reviewed procedures</p><h2 tabindex="-1" id="learning-title">Learning review</h2></div></div><p class="hint">Reusable procedures have their own evidence, applicability and review. Their acceptance is separate from a verified investigation.</p>
+      <p id="lesson">Checking the learning store…</p>
+      <div id="reviews"></div>
+    </section>
+    <section class="panel learning" data-panel="teaching"><h2 tabindex="-1">Teaching example · fixture only</h2>
+<p>This offline example is separate from the gated native teaching feature. It does not inspect an IRIS session.</p>
+<label for="simulation-mode">Explanation mode</label><select id="simulation-mode"><option value="coach">Coach</option><option value="focus">Focus</option><option value="companion">Companion</option></select>
+<p id="simulation-coach">A recorded hop tells you where a message was seen. <button id="simulation-dismiss" type="button">Dismiss tip</button></p>
+<button id="simulation-explain" type="button">Explain this</button><p id="simulation-reaction"></p>
+<div id="simulation-lesson" hidden><p>This example shows a recorded hop in a synthetic trace. The session groups messages; each message has its own ID.</p>
+<p><strong>Delivery is unverified</strong> when the example has no destination receipt. A recorded hop alone does not prove delivery.</p>
+<p>Next, inspect the last recorded message and look for a receiving-system receipt.</p><details><summary>IRIS terms and source</summary><p>Session ID, message ID, message header and Visual Trace. This common-concept reference does not establish Build 154-specific behavior.</p><a href="https://docs.intersystems.com/iris20262/csp/docbook/DocBook.UI.Page.cls?KEY=EMONITOR_message_trace">InterSystems Visual Trace documentation (2026.2)</a></details></div></section>
+  </div>
+<footer class="workspace-footer"><span>Evidence stays attached to its run. Verification and authorization stay separate.</span><a href="https://github.com/KennethJSmithDev/ISAIAH" target="_blank" rel="noopener noreferrer">Inspect ISAIAH source ↗</a></footer></main>
+</body>
+</html>
