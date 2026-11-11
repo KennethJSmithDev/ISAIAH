@@ -1,7 +1,5 @@
 # ISAIAH 0.1.1
 
-> **Developer preview:** this source extends the 0.1.1 foundation with [scoped source inspection, reviewed patches and one constrained native development example](docs/developer-workflow.md). This is a source update, not a new registry package or a general application builder. The existing browser teaching-promotion gate remains in force.
-
 <p align="center">
   <a href="#start"><strong>Docker Quick Start</strong></a> &nbsp;·&nbsp;
   <a href="#ipm"><strong>IRIS / IPM Install</strong></a> &nbsp;·&nbsp;
@@ -14,15 +12,15 @@
 
 <p align="center"><strong>Investigate with context. Verify with evidence.</strong><br>Native AI Hub investigations · Scoped evidence · Independent verification · Explicit approval</p>
 
-**InterSystems Artificial Intelligence Agentic Harness** investigates synthetic routing incidents with a native IRIS AI Hub agent inside an Interoperability production. The agent selects a Diagnostic or Review branch; an independent deterministic verifier checks its finding, proposed action, cited evidence and executed branch against IRIS records.
+**ISAIAH (InterSystems Artificial Intelligence Agentic Harness)** is an open-source agentic development and learning harness for InterSystems. Its synthetic Health workflow investigates routing incidents inside an IRIS Interoperability production. A native AI Hub agent selects a Diagnostic or Review branch, and a deterministic verifier checks the decision against separate IRIS and destination records. The supported repair and rollback each require explicit approval.
 
-This v0.1.1 developer candidate addresses the [AI Agents in Interoperability Workflows contest task](https://openexchange.intersystems.com/contest/49) through that real production decision.
+**Developer / Teacher / Engineer** describes the direction. The developer preview supports scoped source inspection, reviewed patches and one constrained HL7-to-FHIR example. Teaching connects retained observations to InterSystems concepts through the CLI and service. Main browser teaching remains gated. [Developer workflow](docs/developer-workflow.md) · [Contest task](https://openexchange.intersystems.com/contest/49)
 
 **Try it:** [requirements](#supported-environment) → [acquire dependencies](#acquire-the-dependencies) → [start](#start) → open **http://127.0.0.1:18757/** and [run R17, then R29](#demonstrate-the-native-workflow). [Inspect the source](#inspect-the-implementation) or [run the offline checks](#offline-checks).
 
 **Provisional demonstration edit — genuine recorded synthetic workflow. Manually recorded presentation footage is planned.**
 
-**Watch the recorded workflow:** [download the captioned 30-second WebM](docs/media/isaiah-judge-demo.webm) (3.2 MiB). It uses genuine local synthetic R17/R29 footage. The opening retains an earlier result; the new R17 completion follows a disclosed recording gap. Separate runs, evidence close-ups and omitted waits are labeled. This is recorded execution, not a live online service.
+Download the captioned 30-second R17/R29 recording (3.2 MiB). [WebM](docs/media/isaiah-judge-demo.webm) · [Recording notes](#recorded-demonstration)
 
 ## Why ISAIAH Is Different
 
@@ -66,13 +64,13 @@ flowchart LR
 
 ## Recorded demonstration
 
-The provisional edit shows retained real native execution in the earlier v0.1.0 layout. It does not show a new execution of the visual refresh. Use the installation and R17/R29 steps below to run the actual application; the video is recorded evidence, not an online service.
+The provisional edit shows native synthetic R17/R29 execution in the earlier v0.1.0 layout. The opening retains an earlier result, and the new R17 completion follows a disclosed recording gap. The edit labels separate runs, evidence close-ups and omitted waits. Follow the native workflow steps to run the current application. [Native workflow](#demonstrate-the-native-workflow)
 
 ## What has been qualified
 
-Retained local qualification establishes the synthetic Health Build 154U workflow, including fresh native R17/R29 decisions, scoped tools, independent verification, approved trace/CLI access and guarded R17 apply/rollback. The ChatGPT plan bridge also passed both cases with each of `gpt-6.1-sol` and `gpt-6.1-terra`; its investigation/provider path is preserved. This developer preview passed 40 offline tests, including both optional Hermes tests in the configured pinned environment. Its new native source-read tool and one constrained mapping proposal have separate qualification; these are not fresh R17/R29 or ChatGPT-provider runs of this source update. See [developer-preview qualification](docs/qualification.md#developer-preview-qualification).
+Retained Health Build 154U qualification covers native R17/R29, independent verification, approved trace access and guarded apply/rollback. The source-read tool and constrained developer example have separate qualification records. [Qualification scope](docs/qualification.md) · [Developer preview](docs/qualification.md#developer-preview-qualification)
 
-The published 0.1.1 foundation's 26 native inputs match the archive that passed clean offline IPM 0.1.1 installation on Health Build 154U. Its later source and installed-runtime suites passed 29 tests, superseding the earlier 18-test milestone. The developer preview's 40-test suite is separate: four native classes have since changed, so the foundation archive does not qualify a clean IPM install of this entire preview. Workflow/notification checks used controlled fixed-agent fixtures, and mobile checks used labeled UI transport fixtures. See the [qualification history](docs/qualification.md#qualification-history). Fresh-machine dependency acquisition and production suitability remain unestablished.
+The clean offline IPM 0.1.1 install qualified the earlier foundation archive. Four native classes differ in the published preview. The combined preview installation and general existing-installation upgrade remain unqualified. The public registry installation recorded below is for 0.1.0. [Qualification history](docs/qualification.md#qualification-history) · [IPM install](#ipm)
 
 ![R17 result from genuine native AI Hub execution in the synthetic ISAIAH interface](docs/media/isaiah-r17.png)
 
@@ -256,7 +254,7 @@ This mutation capability covers one synthetic setting and one local operator key
 
 ## IPM
 
-Root module.xml packages Isaiah.PKG from iris/ as isaiah version 0.1.1, with SystemRequirements Version=">=2026.3" Interoperability="enabled". Required classes are under iris/cls/Isaiah. Compose loads the module into a clean synthetic namespace through IPM.
+Root `module.xml` packages `Isaiah.PKG` from `iris/` as `isaiah` version 0.1.1. It requires IRIS 2026.3 or later with Interoperability enabled. The documented Compose setup provisions the synthetic namespaces and loads an absent module through IPM.
 
 The registry command is `zpm "install isaiah"`; as checked November 10, 2026, it installs **0.1.0**, not this 0.1.1 source. A fresh Health Build154U / IPM 0.10.10 client installed that public package and reproduced both deterministic fixture routes without model calls. IPM 0.9+ does not enable the community registry by default. If needed, an administrator can configure it in the intended disposable namespace using `zpm "repo -r -n registry -url https://pm.community.intersystems.com/"`; see the [pinned IPM instructions](https://github.com/intersystems/ipm/blob/v0.10.10/README.md). This changes the client's repository configuration, not ISAIAH's version.
 

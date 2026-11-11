@@ -79,7 +79,7 @@ Set status=##class(Isaiah.SenderContract).Accept(contract,"")
 Write $SYSTEM.Status.GetErrorText(status),!
 ```
 
-This is an original synthetic fixture definition, not a reproduction of an external tester's private sender contracts. Do not use it to authorize repairs in another application.
+Use this contract only for the synthetic R17 sandbox described here.
 
 ## Qualified scope
 

@@ -1,5 +1,7 @@
 # Local model provider profiles
 
+From a source checkout, replace `isaiah` in the examples with `node standalone/cli.mjs` from the repository root. Create the private output directory before running a preset. The Compose preparation step creates `.local` for the documented sandbox. [Compose preparation](../README.md#start)
+
 The standalone CLI can prepare the existing profile representation without copying credentials:
 
 ```powershell

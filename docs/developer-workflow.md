@@ -1,8 +1,10 @@
-# Scoped developer workflow — local prototype
+# Scoped developer workflow
 
 This slice adds operator-selected source inspection, reviewed project context and a narrowly bounded patch workflow to the existing standalone service. It also demonstrates one native AI Hub mapping proposal assembled into a synthetic HL7-to-FHIR Organization application. It does not implement a general application generator, arbitrary procedure generation or unattended self-modification.
 
 ## Select the source boundary
+
+For a source checkout, replace `isaiah` in the examples with `node standalone/cli.mjs` from the repository root. Start the standalone service with the same CLI's `serve` command after setting the project profile. [Source dependencies and checks](../README.md#offline-checks)
 
 Set `ISAIAH_PROJECT_PROFILE` before starting the standalone service. Keep this operator-owned file outside distributable source. No endpoint accepts a replacement root, shell command or additional tool permission.
 
