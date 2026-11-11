@@ -1,5 +1,6 @@
 /.local/
 /node_modules/
 /simulation-dist/
+/pages-preview/
 __pycache__/
 *.pyc

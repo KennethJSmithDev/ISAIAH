@@ -4,7 +4,7 @@
   <a href="#start"><strong>Docker Quick Start</strong></a> &nbsp;·&nbsp;
   <a href="#ipm"><strong>IRIS / IPM Install</strong></a> &nbsp;·&nbsp;
   <a href="#demonstrate-the-native-workflow"><strong>Native Workflow</strong></a> &nbsp;·&nbsp;
-  <a href="#recorded-demonstration"><strong>Recorded Demo</strong></a> &nbsp;·&nbsp;
+  <a href="#public-experiences"><strong>Demo &amp; Media</strong></a> &nbsp;·&nbsp;
   <a href="#inspect-the-implementation"><strong>Source &amp; Evidence</strong></a>
 </p>
 
@@ -65,6 +65,23 @@ flowchart LR
 ## Recorded demonstration
 
 The provisional edit shows native synthetic R17/R29 execution in the earlier v0.1.0 layout. The opening retains an earlier result, and the new R17 completion follows a disclosed recording gap. The edit labels separate runs, evidence close-ups and omitted waits. Follow the native workflow steps to run the current application. [Native workflow](#demonstrate-the-native-workflow)
+
+## Public experiences
+
+| Surface | Start here |
+|---|---|
+| Repository | [Install the harness](#start), [inspect the implementation](#inspect-the-implementation), or [check the qualification scope](docs/qualification.md). |
+| Interactive demo | The static Pages build lets you explore authored R17 and R29 examples without IRIS or a model. See the local preview command below. |
+| Media gallery | Browse the genuine R17 capture and edited R17/R29 recording in the gallery included in the Pages build. The [screenshot](docs/media/isaiah-r17.png) and [video download](docs/media/isaiah-judge-demo.webm) are also in this repository. |
+
+For a local preview, run these commands from the repository root with Node.js 24 and Python 3. The output directory must be new.
+
+```sh
+node simulation/build-pages.mjs pages-preview
+python -m http.server 8765 --bind 127.0.0.1 --directory pages-preview
+```
+
+Open `http://127.0.0.1:8765/` for the interactive demo or `http://127.0.0.1:8765/media/` for the gallery. Use Ctrl+C to stop the preview. For actual native execution, follow the [Health Build 154U walkthrough](#demonstrate-the-native-workflow).
 
 ## What has been qualified
 
