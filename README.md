@@ -71,8 +71,8 @@ The provisional edit shows native synthetic R17/R29 execution in the earlier v0.
 | Surface | Start here |
 |---|---|
 | Repository | [Install the harness](#start), [inspect the implementation](#inspect-the-implementation), or [check the qualification scope](docs/qualification.md). |
-| Interactive demo | The static Pages build lets you explore authored R17 and R29 examples without IRIS or a model. See the local preview command below. |
-| Media gallery | Browse the genuine R17 capture and edited R17/R29 recording in the gallery included in the Pages build. The [screenshot](docs/media/isaiah-r17.png) and [video download](docs/media/isaiah-judge-demo.webm) are also in this repository. |
+| Interactive demo | [Open the interactive simulation](https://kennethjsmithdev.github.io/ISAIAH/) to explore authored R17 and R29 examples without IRIS or a model. |
+| Media gallery | [Open the media gallery](https://kennethjsmithdev.github.io/ISAIAH/media/) for the genuine R17 capture and edited R17/R29 recording. The [screenshot](docs/media/isaiah-r17.png) and [video download](docs/media/isaiah-judge-demo.webm) are also in this repository. |
 
 For a local preview, run these commands from the repository root with Node.js 24 and Python 3. The output directory must be new.
 
