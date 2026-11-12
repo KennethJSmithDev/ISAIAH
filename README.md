@@ -8,7 +8,7 @@
   <a href="#inspect-the-implementation"><strong>Source &amp; Evidence</strong></a>
 </p>
 
-<p align="center"><img src="assets/branding/isaiah-logo.png" alt="ISAIAH — charcoal robot with mint eyes" width="220"></p>
+<p align="center"><img src="assets/branding/isaiah-wave.gif" alt="ISAIAH waving — charcoal robot with mint eyes" width="220"></p>
 
 <p align="center"><strong>Investigate with context. Verify with evidence.</strong><br>Native AI Hub investigations · Scoped evidence · Independent verification · Explicit approval</p>
 
