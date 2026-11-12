@@ -189,7 +189,7 @@ ClassMethod DeveloperAssist() As %Status
 {
     Try {
         Set data={}.%FromJSON(%request.Content)
-        If '##class(Isaiah.State).RunId(data.runId) || ((data.kind'="trace") && (data.kind'="explain") && (data.kind'="develop")) ||
+        If '##class(Isaiah.State).RunId(data.runId) || ((data.kind'="trace") && (data.kind'="explain") && (data.kind'="develop") && (data.kind'="propose-test")) ||
             ($Length(data.context)<1) || ($Length(data.context)>20000) || ($Length(data.guidance)>2000) {
             Return ..Reply({"error":"Invalid developer assistance request."},"400 Bad Request")
         }

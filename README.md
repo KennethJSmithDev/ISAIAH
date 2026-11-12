@@ -87,7 +87,7 @@ Open `http://127.0.0.1:8765/` for the interactive demo or `http://127.0.0.1:8765
 
 Retained Health Build 154U qualification covers native R17/R29, independent verification, approved trace access and guarded apply/rollback. The source-read tool and constrained developer example have separate qualification records. [Qualification scope](docs/qualification.md) · [Developer preview](docs/qualification.md#developer-preview-qualification)
 
-The current **0.1.1 native IPM archive** passed a clean offline installation on Health Build 154U using all 26 package inputs at `61e6676`. The Interoperability guard refused installation before class loading when Interoperability was disabled. With it enabled, R17 delivered to Standard and R29 recorded Express unavailable followed by Standard fallback. The separate offline deterministic verifier suite passed all three tests. Archive SHA-256 `e14bc43e27e5ee780ea44b38a1930acf33fd9a49e2c466560e5f2ddbdf564036`. [Qualification history](docs/qualification.md#qualification-history)
+The earlier **0.1.1 native IPM archive** passed a clean offline installation on Health Build 154U using all 26 package inputs at `61e6676`. The Interoperability guard refused installation before class loading when Interoperability was disabled. With it enabled, R17 delivered to Standard and R29 recorded Express unavailable followed by Standard fallback. The separate offline deterministic verifier suite passed all three tests. Archive SHA-256 `e14bc43e27e5ee780ea44b38a1930acf33fd9a49e2c466560e5f2ddbdf564036`. [Qualification history](docs/qualification.md#qualification-history)
 
 A complete fresh installation of the current Node, browser and model system and general existing-installation upgrades remain separately unqualified. The public registry installation recorded below covers **0.1.0**. [IPM install](#ipm)
 
@@ -273,9 +273,9 @@ This mutation capability covers one synthetic setting and one local operator key
 
 ## IPM
 
-Root `module.xml` packages `Isaiah.PKG` from `iris/` as `isaiah` version 0.1.1. It requires IRIS 2026.3 or later with Interoperability enabled. The documented Compose setup provisions the synthetic namespaces and loads an absent module through IPM.
+Root `module.xml` packages `Isaiah.PKG` from `iris/` as `isaiah` version 0.2.0. The exact native archive passed clean offline installation and an in-place upgrade from the retained public 0.1.0 package on Health Build 154U. This result covers the synthetic production and its retained message history. It requires IRIS 2026.3 or later with Interoperability enabled. The documented Compose setup provisions the synthetic namespaces and loads an absent module through IPM.
 
-The registry command is `zpm "install isaiah"`; as checked November 10, 2026, it installs **0.1.0**, not this 0.1.1 source. A fresh Health Build154U / IPM 0.10.10 client installed that public package and reproduced both deterministic fixture routes without model calls. IPM 0.9+ does not enable the community registry by default. If needed, an administrator can configure it in the intended disposable namespace using `zpm "repo -r -n registry -url https://pm.community.intersystems.com/"`; see the [pinned IPM instructions](https://github.com/intersystems/ipm/blob/v0.10.10/README.md). This changes the client's repository configuration, not ISAIAH's version.
+The registry command is `zpm "install isaiah"`; as checked November 10, 2026, it installed **0.1.0**. Check the registry metadata for the currently served version. A fresh Health Build154U / IPM 0.10.10 client installed that public package and reproduced both deterministic fixture routes without model calls. IPM 0.9+ does not enable the community registry by default. If needed, an administrator can configure it in the intended disposable namespace using `zpm "repo -r -n registry -url https://pm.community.intersystems.com/"`; see the [pinned IPM instructions](https://github.com/intersystems/ipm/blob/v0.10.10/README.md). This changes the client's repository configuration, not ISAIAH's version.
 
 An administrator can instead load the current source using IPM 0.10.10 in an authorized Interoperability-enabled namespace.
 
@@ -283,7 +283,7 @@ An administrator can instead load the current source using IPM 0.10.10 in an aut
 zpm "load /path/to/ISAIAH -nodev"
 ~~~
 
-Module loading installs classes. Permissions, accounts, provider credentials and production startup remain separate administrator responsibilities. Compose provisions its disposable targets. The [public IPM registry](https://pm.community.intersystems.com/packages/isaiah) lists only 0.1.0, and the 0.1.1 archive endpoint returned 404 on the date above. Use the source-load or Compose route for this 0.1.1 source candidate, subject to its stated qualification limits and migration warning. The complete browser/model demonstration uses the Compose setup above.
+Module loading installs classes. Permissions, accounts, provider credentials and production startup remain separate administrator responsibilities. Compose provisions its disposable targets. The [public IPM registry](https://pm.community.intersystems.com/packages/isaiah) is the authority for the publicly installable version. Use the source-load or Compose route subject to the qualification limits and migration warning. The complete browser/model demonstration uses the Compose setup above.
 
 ## Offline checks
 

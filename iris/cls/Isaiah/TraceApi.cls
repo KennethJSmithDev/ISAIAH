@@ -54,7 +54,7 @@ ClassMethod SessionData(target As %DynamicObject, id As %String) As %DynamicObje
     }
     Set first=$Get(^IsaiahTrace("session",id))
     If first="" { Return {"ok":0,"error":"Trace session is outside scope.","status":"404 Not Found"} }
-    Set sql="SELECT TOP 41 ID, SourceConfigName, TargetConfigName, Status, IsError, TimeCreated FROM Ens.MessageHeader WHERE SessionId = ? ORDER BY ID"
+    Set sql="SELECT TOP 41 ID, SourceConfigName, TargetConfigName, MessageBodyClassName, Status, IsError, TimeCreated FROM Ens.MessageHeader WHERE SessionId = ? ORDER BY ID"
     Set rows=##class(%SQL.Statement).%ExecDirect(,sql,id), hops=[]
     While rows.%Next() {
         Set header=rows.%Get("ID")
@@ -62,7 +62,7 @@ ClassMethod SessionData(target As %DynamicObject, id As %String) As %DynamicObje
             Return {"ok":0,"error":"Trace session is outside scope.","status":"404 Not Found"}
         }
         Do hops.%Push({"id":(header_""),"source":(rows.%Get("SourceConfigName")),"target":(rows.%Get("TargetConfigName")),
-            "status":(rows.%Get("Status")_""),"error":(+rows.%Get("IsError")),"at":(rows.%Get("TimeCreated"))})
+            "messageClass":(rows.%Get("MessageBodyClassName")_""),"status":(rows.%Get("Status")_""),"error":(+rows.%Get("IsError")),"at":(rows.%Get("TimeCreated"))})
     }
     If (hops.%Size()=0) || (hops.%Size()>40) {
         Return {"ok":0,"error":"Complete bounded trace unavailable.","status":"409 Conflict"}

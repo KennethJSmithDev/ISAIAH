@@ -3,7 +3,7 @@
   <Document name="isaiah.ZPM">
     <Module>
       <Name>isaiah</Name>
-      <Version>0.1.1</Version>
+      <Version>0.2.0</Version>
       <Description>ISAIAH synthetic delivery investigation for IRIS AI Hub and Interoperability.</Description>
       <Packaging>module</Packaging>
       <SourcesRoot>iris</SourcesRoot>
