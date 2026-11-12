@@ -1,6 +1,6 @@
 {
   "name": "isaiah",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
@@ -13,6 +13,7 @@
     "docs/interoperability-expansion.md",
     "docs/interop-connections.md",
     "docs/developer-workflow.md",
+    "docs/fhir-openapi.md",
     "docs/provider-profiles.md",
     "docs/provider-bridge-testing.md",
     "docs/chatgpt-plan.md",

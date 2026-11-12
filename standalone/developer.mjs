@@ -94,7 +94,7 @@ export function createDeveloper({ directory, profile, edition, assist, persist, 
   async function handle(action, data) {
     if (action === 'project') {
       if (!projectWorkflow) throw Object.assign(new Error('No operator-selected project is configured.'), { statusCode: 409 });
-      return projectWorkflow.handle(data);
+      return teaching.projectObservation(await projectWorkflow.handle(data));
     }
     if (action === 'context') {
       if (!scope) throw new Error('Configure an approved target before reviewing context.');
@@ -145,5 +145,8 @@ export function createDeveloper({ directory, profile, edition, assist, persist, 
     throw Object.assign(new Error('Developer route unavailable.'), { statusCode: 404 });
   }
   return { doctor, handle, cue: teaching.cue, close: () => ledger.close(),
-    present: run => run.kind === 'interop-read' ? { ...run, teaching: teaching.observation(run.observation, { kind: 'run', id: run.id }) } : run };
+    present: run => {
+      if (run.kind === 'interop-read') return { ...run, teaching: teaching.observation(run.observation, { kind: 'run', id: run.id }) };
+      return project && run.compatibility === project.scope ? teaching.projectObservation(run) : run;
+    } };
 }

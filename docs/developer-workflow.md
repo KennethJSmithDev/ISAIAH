@@ -52,7 +52,7 @@ Review the original/replacement content and exact before/after hashes in the run
 
 **The built-in check is JavaScript syntax only. It never executes the proposed source or claims correct runtime behavior.** ObjectScript proposals require a separately qualified compiler boundary. Applying is disabled by default and requires `allowApply:true` in the private profile plus explicit acceptance of the exact revision. A final bounded replacement holds the existing ledger transaction while rechecking acceptance. File replacement is atomic, but filesystem changes and SQLite records are not one crash-atomic store. Reconciliation resolves the observed bytes or returns review.
 
-Use exclusively controlled disposable working directories for this prototype. Its operator-local API inherits the existing localhost Host/Origin/header policy; it is not multiuser authentication, production-deployment authorization or protection against hostile external filesystem writers. It does not expose an approval/apply tool over native MCP. Do not enable against a live checkout merely because syntax passed.
+Use disposable working directories that only you can write to. ISAIAH checks the resolved path before opening a file. That check does not fully bind the opened file to the approved path if another writer replaces it concurrently. Shared or untrusted writable workspaces are unsupported. Its operator-local API inherits the existing localhost Host/Origin/header policy; it is not multiuser authentication, production-deployment authorization or protection against hostile external filesystem writers. It does not expose an approval/apply tool over native MCP. Do not enable against a live checkout merely because syntax passed.
 
 ## Read native method source
 
@@ -75,10 +75,62 @@ The frozen fixture contract requires MSH:4 as Organization name/identifier, MSH:
 
 Exports name their emitter revision and exact file hashes. Reusing an older retained mapping plan with the current emitter is labeled a new derivation; it is not a new model execution or unchanged executable source.
 
-The synthetic application uses native `EnsLib.HL7.Message`, a service/process/operation production, an authenticated REST entry and a separately configured FHIR destination. Its generated IPM source requires Interoperability. Destination credentials are read from a protected native file, never the model or API body. Resource identifiers allow explicit read-only reconciliation after an uncertain response. The fixed destination path and configuration are qualification-fixture specifics, not a general FHIR deployment installer.
+The synthetic application uses native `EnsLib.HL7.Message`, a service/process/operation production, an authenticated REST entry and a separately configured FHIR destination. Its generated IPM source requires Interoperability. The model and API request have no authority to select or change the destination. The HL7 control ID must use the reserved `isaiah017-` prefix.
 
-Resource IDs must use the reserved `isaiah017-` synthetic prefix. The destination independently checks that scope and matching Organization identity, refuses an existing resource without its own durable claim, and requests create-only HTTP semantics. It is not an API for updating arbitrary existing repository records.
+### Configure a disposable FHIR destination
+
+The existing R5 fixture configuration continues to use the fixed native R5 path and the HL7 control ID as the Organization ID. A separate configuration opts into a synthetic R4, R4B, or R5 server with FHIR conditional create. In a disposable IRIS namespace, an administrator can put the following in the protected fixture file `/tmp/isaiah-devx017/fhir.json` using an atomic replacement. Keep optional `username` and `password` values in that protected file.
+
+```json
+{
+  "host": "127.0.0.1",
+  "port": 8080,
+  "mode": "conditional-create",
+  "fhirVersion": "4.3.0",
+  "targetId": "synthetic-r4b-01"
+}
+```
+
+Use a dedicated loopback fixture serving `/fhir/` inside the IRIS process's network namespace. The accepted version strings are `4.0.1`, `4.3.0`, and `5.0.0`. Assign a new `targetId` if the repository is replaced, even if it retains its port. Confirm the server implements conditional Organization creation with the search token in `If-None-Exist`. The prototype was exercised against HAPI FHIR JPA 8.8.0. This setup assumes exclusive control of the synthetic identifier space and requires a server that supports uncached identifier searches.
+
+The operation checks `/metadata` and rejects an existing record before the first dispatch. The conditional-create route uses `POST` with the scoped control identifier. The server assigns the Organization ID, returned as `id` in a verified receipt. The receipt separately returns the HL7 `controlId`, target ID and FHIR release. A durable claim binds the source and destination. Reconciliation uses an uncached search and an exact resource readback, and does not repeat the write. An explicit refusal remains unverified even if a matching resource later appears. A historical unbound R5 receipt remains readable in legacy mode. An unresolved claim from before target binding remains in review.
+
+This route is limited to the generated synthetic Organization application. A server that advertises FHIR or accepts a `PUT` can still fail to enforce create-only writes. Do not direct this fixture at a shared or clinical endpoint.
 
 Local qualification compiled/installed this artifact, sent known and held-out synthetic facility values, independently read FHIR IDs/versions and IRIS message-header hops, rejected missing required fields, checked duplicates and changed-source refusal, and injected loss after the destination write. Existing teaching projected the resulting actual resource receipt identically in all three modes. Reviewed project context survived fresh processes, withheld changed facts, reported unchanged without extra revisions and restored a preceding accepted revision.
 
 These are separate evidence classes: one real native planning response; deterministic source emission; actual compiler/IPM/production/HTTP effects; independent readback; isolated approval tests; and context/teaching persistence. The held-out facility tests the fixed application mapping, not general model reasoning. No runtime model call is needed for the generated application. Main browser teaching promotion, standard IRIS/Health Connect, MLLP, clinical data and unrestricted application creation remain separate gates.
+
+## Propose a synthetic mapping test
+
+```sh
+isaiah project test-propose --objective "Distinguish the sending application and facility in the Organization mapping."
+```
+
+Use the synthetic project profile with an approved `mapping` record and `allowDesign:true`. Native AI Hub proposes distinct synthetic input values. The bounded emitter sets the HL7 document type and derives the expected Organization fields from the fixture contract. Review the returned test source and source hash before compiling it in a disposable namespace. The CLI reports input validation and retains the proposal. Test execution requires a separate action.
+
+## Inspect interoperability contracts
+
+```sh
+isaiah project fhir-openapi --record APPROVED-CAPABILITY-KEY
+isaiah project component-types --record APPROVED-CLASS-KEY --trace-record APPROVED-TRACE-KEY --component Standard
+```
+
+The OpenAPI preview reads an approved local FHIR R4 (4.0.1), R4B (4.3.0), or R5 (5.0.0) JSON CapabilityStatement and returns an OpenAPI 3.1 document for advertised resource read and search operations. The document names the source FHIR release. The preview identifies skipped resource interactions and leaves search parameters, full profiles, authentication and server URLs outside the export.
+
+For a server statement larger than 64 KiB, the operator can set `"kind":"fhir-capability"` on its approved JSON record in the private project profile. This permits up to 8 MiB for the export. Project maps can list the marked record's identity and size. Ordinary source reads still have the 64 KiB limit.
+
+The component inspector compares a simple ObjectScript MessageMap and method signature with body class names from an approved trace record. The native trace projection supplies the class name without exposing the body. Missing and multiple types remain visible. When a unique declared request/response pair agrees with the trace, the inspector offers a candidate source/target pair for review. The inspected source and trace remain independently identified by their hashes.
+
+The CLI includes an evidence-linked explanation for these inspections. Coach shows the lesson, Focus keeps it on demand, and Companion adds a short reaction. Reopen the result with `isaiah run show RUN-ID`. The explanation keeps the declared and observed types separate. A CapabilityStatement export establishes which operations were advertised; a separately authorized endpoint read is needed to verify a response.
+
+## Export a versioned synthetic interface
+
+Approve a local JSON record with schema `isaiah.synthetic-interface.v1` and facility `sending` or `receiving`. Both variants use MSH:10 for the control ID. The legacy R5 route also uses it as the Organization ID. They use MSH:4 and MSH:6 respectively for the Organization name and identifier.
+
+```sh
+isaiah project interface-plan --record APPROVED-INTERFACE-SPEC-KEY
+isaiah project export RETURNED-PLAN-RUN --output NEW-EMPTY-DIRECTORY
+```
+
+The reviewed spec yields the existing synthetic production scaffold, a mapping test, documentation and a file hash manifest. Each export is source-only. Compile and test in a disposable namespace. Configure and qualify destination delivery separately.

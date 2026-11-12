@@ -7,8 +7,10 @@ export function verifyDevelopmentPlan(plan) {
   return { status: 'pass', claim: 'bounded-plan-contract', codeCompilation: 'not-run', delivery: 'unverified' };
 }
 
-export function generateSyntheticMapping(plan) {
+export function generateSyntheticMapping(plan, facilitySide = 'sending') {
   verifyDevelopmentPlan(plan);
+  if (!['sending','receiving'].includes(facilitySide)) throw new Error('Unsupported synthetic facility source.');
+  const facilityPath = facilitySide === 'sending' ? 'MSH:4' : 'MSH:6';
   // The model selects a checked mapping plan; it never supplies executable source to this emitter.
   return `Class IsaiahDevx.Mapping Extends %RegisteredObject
 {
@@ -18,7 +20,7 @@ ClassMethod ValidId(control As %String) As %Boolean
 }
 ClassMethod Build(input As EnsLib.HL7.Message) As %DynamicObject
 {
-    Set control=input.GetValueAt("MSH:10"), facility=input.GetValueAt("MSH:4")
+    Set control=input.GetValueAt("MSH:10"), facility=input.GetValueAt("${facilityPath}")
     If '..ValidId(control) || (facility="") {
         Throw ##class(%Exception.General).%New("Synthetic control ID and facility are required")
     }

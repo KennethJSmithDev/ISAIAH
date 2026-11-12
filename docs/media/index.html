@@ -18,7 +18,8 @@
   </header>
   <main id="media" tabindex="-1">
     <h1>Media gallery</h1>
-    <p>Application captures from synthetic IRIS for Health AI Hub Build 154U runs.</p>
+    <p>Recorded synthetic routing runs and an ISAIAH 0.2.0 CLI export example.</p>
+    <p><a href="#fhir-openapi">FHIR to OpenAPI · Community Idea DPI-I-804</a></p>
     <section class="card" aria-labelledby="video-title">
       <h2 id="video-title">R17 and R29 demonstration</h2>
       <p class="notice"><strong>Provisional demonstration edit — genuine recorded synthetic workflow. Manually recorded presentation footage is planned.</strong></p>
@@ -40,6 +41,32 @@
         <figcaption>Genuine screenshot from the earlier native synthetic R17 workflow.</figcaption>
       </figure>
       <p><a href="./isaiah-r17.png" download>Download the screenshot</a> · <a href="https://github.com/KennethJSmithDev/ISAIAH/blob/89f88b6d59fbd1de4b165bd645cc6895d2a2639a/docs/qualification.md">Qualification and scope</a></p>
+    </section>
+    <section class="card" id="fhir-openapi" aria-labelledby="fhir-openapi-title">
+      <h2 id="fhir-openapi-title">FHIR to OpenAPI · ISAIAH 0.2.0</h2>
+      <p>Give ISAIAH an approved FHIR CapabilityStatement and it produces an OpenAPI 3.1 document for the advertised read and search operations. <a href="https://ideas.intersystems.com/ideas/DPI-I-804">InterSystems Community Idea DPI-I-804</a></p>
+      <p class="notice"><strong>Actual CLI output from synthetic examples.</strong> The export uses local files and makes no model or endpoint calls.</p>
+      <details>
+        <summary>Read the R4, R4B, and R5 CLI output</summary>
+        <p><code>FHIR R4 advertised read and search interactions<br>
+          /Organization<br>
+          /Organization/{id}<br>
+          Organization: update<br>
+          unverified<br>
+          FHIR R4B advertised read and search interactions<br>
+          /Organization<br>
+          /Organization/{id}<br>
+          Organization: update<br>
+          unverified<br>
+          FHIR R5 advertised read and search interactions<br>
+          /Organization<br>
+          /Organization/{id}<br>
+          Organization: update<br>
+          unverified<br>
+          409 Source record is outside the approved project.</code></p>
+      </details>
+      <p>Separate package qualification reproduced the three-path R4 export, generated 282 paths from a public R4B test-server statement, and reproduced 314 paths from a captured native R5 statement. A separate generated IRIS production delivered one synthetic Organization per request to local R4, R4B, and R5 test servers. Independent reads confirmed delivery. This is qualification evidence from a separate run. The CLI export itself leaves live endpoint behavior unverified.</p>
+      <p>To reproduce the example, follow <strong>Community Idea: FHIR to OpenAPI</strong> in the README for the 0.2.0 source.</p>
     </section>
   </main>
 </body>

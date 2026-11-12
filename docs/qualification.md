@@ -2,7 +2,7 @@
 
 The foundation results below describe published source commit `9e63278bb901ad8dffc122a5ad1973949f56ed07`. A later clean installation qualified all 26 native IPM inputs at `61e6676e56fb9b5a7ddcb4a2fe855f86ca74f3c4`, including the four classes changed for the [developer preview](developer-workflow.md). The preview's generated synthetic application's production-routed FHIR proof is scoped to that fixture.
 
-This 0.1.1 source candidate targets **IRIS for Health Community AI Hub 2026.3.0AI Build 154U, Linux amd64** with synthetic data. Source availability, native qualification, registry availability and contest acknowledgment are separate states. This document summarizes retained qualification; it is not a new live execution.
+This 0.2.0 source candidate targets **IRIS for Health Community AI Hub 2026.3.0AI Build 154U, Linux amd64** with synthetic data. Source availability, native qualification, registry availability and contest acknowledgment are separate states. This document summarizes retained qualification; it is not a new live execution.
 
 | Capability | Evidence established | Boundary |
 |---|---|---|
@@ -42,7 +42,7 @@ The clean-installed 0.1.1 IPM archive contains the ISAIAH native package, licens
 
 ## Developer-preview qualification
 
-The source additions described in [Developer workflow](developer-workflow.md) are separate from the foundation table and archive identities above. Version metadata remains 0.1.1 for this source review; the new source and private Node archive are not a newly published IPM or npm package. The preview passed 40 offline tests, including both Hermes tests when the pinned optional environment was explicitly configured. Without that environment those two tests skip.
+The source additions described in [Developer workflow](developer-workflow.md) are separate from the foundation table and archive identities above. That source review used version 0.1.1; the preview was not published as an IPM or npm package. The preview passed 40 offline tests, including both Hermes tests when the pinned optional environment was explicitly configured. Without that environment those two tests skip.
 
 | Added boundary | Evidence established | Limit |
 |---|---|---|

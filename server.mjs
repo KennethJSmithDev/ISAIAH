@@ -50,7 +50,7 @@ const savedRuns = (await readdir(runsDir)).filter(name => /^\d{13}-[0-9a-f-]{36}
 for (const name of savedRuns.reverse()) {
   try {
     const candidate = JSON.parse(await readFile(join(runsDir, name), 'utf8'));
-    if (['trace','interop-read','teaching','project-read','project-patch','development-plan'].includes(candidate.kind)) continue;
+    if (['trace','interop-read','teaching','project-read','project-patch','development-plan','organization-test','fhir-openapi','component-types','interface-plan'].includes(candidate.kind)) continue;
     latest = candidate;
     if (latest.active) {
       latest.active = latest.cancellable = false;

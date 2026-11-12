@@ -4,6 +4,10 @@ import { checkProjectPatch, projectFacts } from './project.mjs';
 import { patchIdentity } from './ledger.mjs';
 import { syntheticDevelopmentContract, verifyDevelopmentPlan } from './development-plan.mjs';
 import { syntheticApplication, syntheticEmitterRevision } from './synthetic-app.mjs';
+import { emitOrganizationTest } from './organization-test-emitter.mjs';
+import { capabilityOpenApi } from './fhir-openapi.mjs';
+import { inspectMessageTypes } from './message-types.mjs';
+import { compileInterfaceSpec, interfaceEmitterRevision } from './interface-spec.mjs';
 
 export function createProjectWorkflow({ project, ledger, directory, persist, readRun, assist }) {
   const error = text => { throw Object.assign(new Error(text), { statusCode: 409 }); };
@@ -30,7 +34,51 @@ export function createProjectWorkflow({ project, ledger, directory, persist, rea
     return run;
   }
   async function handle(data) {
-    if (data.operation === 'design') {
+    if (data.operation === 'interface-plan') {
+      exact(data,['operation','key']);
+      if (typeof data.key !== 'string') error('Choose an approved interface specification record.');
+      const snapshot = await project.snapshot(data.key);
+      if (!snapshot.permissions.design) error('Interface planning is disabled for this project.');
+      let spec, compiled;
+      try { spec = JSON.parse(snapshot.selected.content); compiled = compileInterfaceSpec(spec); }
+      catch (exception) { error(exception.message); }
+      const run = { id:randomUUID(), started:Date.now(), kind:'interface-plan', compatibility:project.scope, active:false,
+        source:{key:snapshot.selected.key,sha256:snapshot.selected.sha256}, decision:spec,
+        proposal:{emitterRevision:interfaceEmitterRevision,files:Object.keys(compiled.files),facilityField:compiled.field,automaticApply:false},
+        verification:{status:'pass',claim:'bounded-interface-spec',compilation:'not-run',delivery:'unverified'},
+        metrics:{modelRequests:0,modelResponses:0} };
+      await persist(run);
+      return run;
+    }
+    if (data.operation === 'component-types') {
+      exact(data,['operation','key','traceKey','component']);
+      if (![data.key,data.traceKey,data.component].every(value => typeof value === 'string')) error('Choose approved source and trace records and one component.');
+      const source = (await project.snapshot(data.key)).selected;
+      const trace = (await project.snapshot(data.traceKey)).selected;
+      let result;
+      try { result = inspectMessageTypes(source.content, JSON.parse(trace.content), data.component); }
+      catch (exception) { error(exception.message); }
+      const run = { id:randomUUID(), started:Date.now(), kind:'component-types', compatibility:project.scope, active:false,
+        records:[source,trace].map(({key,sha256}) => ({key,sha256})), ...result,
+        metrics:{modelRequests:0,modelResponses:0} };
+      await persist(run);
+      return run;
+    }
+    if (data.operation === 'fhir-openapi') {
+      exact(data,['operation','key']);
+      if (typeof data.key !== 'string') error('Choose an approved CapabilityStatement record.');
+      const capability = await project.readCapability(data.key);
+      let result;
+      try { result = capabilityOpenApi(capability.content); }
+      catch (exception) { error(exception.message); }
+      const run = { id:randomUUID(), started:Date.now(), kind:'fhir-openapi', compatibility:project.scope, active:false,
+        source:{key:capability.key,sha256:capability.sha256}, ...result,
+        verification:{status:'pass',claim:'advertised-interactions-only',liveBehavior:'unverified'},
+        metrics:{modelRequests:0,modelResponses:0} };
+      await persist(run);
+      return run;
+    }
+    if (data.operation === 'design' || data.operation === 'test-propose') {
       exact(data,['operation','objective']);
       if (typeof data.objective !== 'string' || !data.objective.trim() || data.objective.length > 1500) error('Enter a bounded synthetic development objective.');
       const selected = ledger.use(contextScope), snapshot = await project.snapshot('mapping');
@@ -39,7 +87,22 @@ export function createProjectWorkflow({ project, ledger, directory, persist, rea
       const context = { objective: data.objective, project: projectFacts(snapshot), source: snapshot.selected,
         ...(included ? {reviewedProjectContext:JSON.parse(selected.guidance)} : {}), contract: syntheticDevelopmentContract };
       if (Buffer.byteLength(JSON.stringify(context)) > 16000) error('Selected source/context exceeds the bounded native design budget.');
-      const response = await assist('develop',context);
+      const testProposal = data.operation === 'test-propose';
+      const response = await assist(testProposal ? 'propose-test' : 'develop',context);
+      if (testProposal) {
+        const run = { id:response.id, started:response.started, kind:'organization-test', compatibility:project.scope, active:false,
+          status:'Native test input proposed · IRIS execution pending', decision:response.result, metrics:response.metrics, provider:response.provider,
+          source: snapshot.selected, verification:{status:'fail',claim:'test-input-contract',execution:'not-run'} };
+        try {
+          run.proposal = { ...emitOrganizationTest(response.result), automaticApply:false };
+          run.verification.status = 'pass';
+        } catch (error) {
+          run.status = 'Native test input refused';
+          run.verification.reason = error.message;
+        }
+        await persist(run);
+        return run;
+      }
       const run = { id:response.id,started:response.started,kind:'development-plan',compatibility:project.scope,active:false,
         status:'Native proposal · application not qualified',decision:response.result,metrics:response.metrics,provider:response.provider,
         context:{revision:selected?.id??null,included:!!included} };

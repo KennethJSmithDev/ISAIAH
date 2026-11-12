@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 const ref = (key, health = false) => `https://docs.intersystems.com/${health ? 'irisforhealth' : 'iris'}20262/csp/docbook/DocBook.UI.Page.cls?KEY=${key}`;
 const topics = {
   production: ['Production components', 'Think of a production as a relay team. A business service takes the request, a business process decides where it goes, and a business operation connects to the destination.', 'Look at the source and target columns for the first hop.', 'EGIN_basics'],
+  'message-types': ['Declared and observed message types', 'The component source lists which message classes its handlers are written to accept and return. The supplied trace records the classes seen during one session.', 'Compare the handler and trace rows. If a class is missing or several classes appear, leave the suggested pair unset.', 'EGDV_busop'],
   session: ['Session ID and message ID', 'A session is the trail for one request. The Session ID groups its messages. A message ID points to one message in that trail.', 'Open the Session ID in Visual Trace and compare the first and last hops.', 'EMONITOR_concepts'],
   status: ['Trace and error states', 'A message status is a progress label. A message can be waiting, processed, or in trouble. Read the recorded status before deciding what happened.', 'Compare the status and error marker on the hop you are checking.', 'EMONITOR_message'],
   delivery: ['Delivery and receipts', 'A hop is like a parcel scan. It shows a place the message reached in IRIS. A receipt from the destination is the evidence that the destination actually received it.', 'Open the destination receipt and check that it matches this run.', 'EMONITOR_message_trace'],
@@ -11,6 +12,7 @@ const topics = {
   monitor: ['Production monitoring', 'A production monitor is a snapshot of how the relay team is doing. A queue count tells you how many messages are waiting at that moment; it does not by itself explain why.', 'Inspect the approved production monitor and compare its queue count with a later snapshot.', 'EMONITOR_production'],
   adapters: ['Adapters and connections', 'An adapter handles how a production component talks to another system, such as a file or a network service. The business host decides what to do with the message.', 'Inspect the approved component class and connection type without changing its settings.', 'EGIN_options_connectivity'],
   hl7: ['HL7 version 2 messages', 'HL7 version 2 is a common way healthcare systems exchange structured messages. In an IRIS production, a service can receive one and a routing process can send it onward.', 'Inspect a permitted synthetic message trace and its configured schema before considering a change.', 'EHL72_intro', true],
+  'fhir-capability': ['Advertised FHIR operations', 'A CapabilityStatement lists what a FHIR endpoint says it supports. The OpenAPI export describes the listed read and search operations.', 'Use an approved read or search and compare its actual response with the exported path.', 'HXFHIRPROD_production', true],
   fhir: ['FHIR and productions', 'FHIR describes healthcare information as resources. An IRIS FHIR endpoint may handle a request directly or route it through a production; the two paths have different traces.', 'Inspect the endpoint configuration and identify its actual path before looking for a production trace.', 'HXFHIRPROD_production', true],
   dicom: ['DICOM in productions', 'DICOM is used to exchange medical images and related information. A production can use DICOM components to communicate with another imaging system.', 'Inspect the configured component and an approved synthetic trace; a query alone does not establish image retrieval.', 'EDICOM_tasks', true]
 };
@@ -91,7 +93,25 @@ export function createTeaching(ledger, edition) {
       evidence, lesson: cue(topic, evidence), explain: card(topic, evidence),
       reaction: mode() === 'companion' ? 'One receipt, accounted for.' : undefined };
   }
-  return { mode, cue, card, preference, importPack, explain, observation };
+  function projectObservation(run) {
+    const evidence = { kind: 'run', id: run.id };
+    let topic, facts, limit;
+    if (run.kind === 'component-types') {
+      topic = 'message-types';
+      const { incoming, outgoing, session } = run.observed;
+      facts = `For ${run.component}, source declaration is ${run.declared.status}. Session ${session} incoming types: ${incoming.status}; outgoing types: ${outgoing.status}.`;
+      limit = run.scope;
+    } else if (run.kind === 'fhir-openapi') {
+      topic = 'fhir-capability';
+      facts = `The approved CapabilityStatement supplied ${Object.keys(run.document.paths).length} read or search paths.`;
+      limit = 'This export describes advertised operations. Live endpoint behavior and production delivery are unverified.';
+    } else return run;
+    const lesson = card(topic, evidence);
+    if (!lesson) return run;
+    return { ...run, teaching: { mode: mode(), facts, limit, evidence, lesson: cue(topic, evidence), explain: lesson,
+      reaction: mode() === 'companion' ? 'The evidence is in view.' : undefined } };
+  }
+  return { mode, cue, card, preference, importPack, explain, observation, projectObservation };
 }
 
 function citation({ id, title, url, version, section, compatibility, digest }) {

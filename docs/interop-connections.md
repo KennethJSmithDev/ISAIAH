@@ -2,6 +2,8 @@
 
 The standalone CLI and service can inspect individually approved synthetic FHIR resources and DICOMweb instances. These are **direct, read-only endpoint requests**, with no inference. They are separate from the native AI Hub R17/R29 investigation workflow. Receiving a resource through these endpoints does not establish an IRIS production hop, clinical correctness, human approval, or a repair.
 
+The direct FHIR reader verifies the profile's exact release from the endpoint CapabilityStatement before reading an approved resource. The installed 0.2.0 CLI was checked against synthetic R4 (4.0.1), R4B (4.3.0), and R5 (5.0.0) endpoints on a controlled local FHIR test server. Separate endpoint search confirmed the seeded Organization in each release. ISAIAH's reader reads exact approved records. The generated IRIS production has separate native R5 delivery qualification.
+
 ## Configure exact targets and records
 
 Set `ISAIAH_INTEROP_PROFILE` to a private JSON file containing up to eight target profiles. Set `ISAIAH_INTEROP_CREDENTIALS` to a different private JSON file. Start the normal standalone service with `isaiah serve`. A configured inference provider is not required for these inspection commands; investigation controls remain unavailable when the native model connection is unavailable.

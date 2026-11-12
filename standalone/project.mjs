@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { lstat, readFile, realpath, writeFile, unlink, mkdir } from 'node:fs/promises';
+import { lstat, open, readFile, realpath, writeFile, unlink, mkdir } from 'node:fs/promises';
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -8,6 +8,15 @@ import { lstatSync, realpathSync, readFileSync, renameSync } from 'node:fs';
 const hash = value => createHash('sha256').update(value).digest('hex');
 const fields = (value, keys) => value && !Array.isArray(value) && Object.keys(value).every(k => keys.includes(k));
 const fail = message => { throw Object.assign(new Error(message), { statusCode: 409 }); };
+const sourceLimit = 64 * 1024;
+const capabilityLimit = 8 * 1024 * 1024;
+const capabilityRecord = record => record.kind === 'fhir-capability';
+function checkReadBound(stat, limit) {
+  if (!stat.isFile() || stat.size > limit) {
+    fail(limit === capabilityLimit ? 'CapabilityStatement must be a regular file no larger than 8 MiB.'
+      : 'Source must be a regular file no larger than 64 KiB.');
+  }
+}
 
 export async function loadProject(path = process.env.ISAIAH_PROJECT_PROFILE) {
   if (!path) return null;
@@ -24,25 +33,40 @@ export async function loadProject(path = process.env.ISAIAH_PROJECT_PROFILE) {
   if (!(await lstat(root)).isDirectory() || (await lstat(profile.root)).isSymbolicLink()) fail('Select a real project directory.');
   const records = new Map();
   for (const record of profile.records) {
-    if (!fields(record, ['key','path']) || !/^[a-z][a-z0-9-]{0,39}$/.test(record.key ?? '') ||
+    if (!fields(record, ['key','path','kind']) || !/^[a-z][a-z0-9-]{0,39}$/.test(record.key ?? '') ||
         !/^[A-Za-z0-9_/-][A-Za-z0-9_./-]*\.(?:cls|mjs|js|md|json|html|css|xml|yaml|yml|txt|py|ps1|sh)$/.test(record.path ?? '') ||
+        (record.kind !== undefined && (!capabilityRecord(record) || extname(record.path) !== '.json')) ||
         /(?:^|\/)(?:node_modules|private)(?:\/|$)|credential|password|secret|token/i.test(record.path) ||
         record.path.split('/').some(x => !x || x.startsWith('.')) || records.has(record.key)) fail('Invalid approved source record.');
     records.set(record.key, { ...record });
   }
   if (new Set([...records.values()].map(x => x.path.toLowerCase())).size !== records.size) fail('Source records must be distinct.');
   const identity = hash(JSON.stringify([root, profile.id, [...records.values()], !!profile.allowApply, !!profile.allowDesign,profile.target??null]));
-  async function read(record) {
+  async function read(record, limit = sourceLimit) {
     const file = resolve(root, ...record.path.split('/'));
     for (let current = file; current !== root; current = dirname(current)) {
       const rel = relative(root, current);
       if (rel === '..' || rel.startsWith('..' + sep) || isAbsolute(rel) || (await lstat(current)).isSymbolicLink()) fail('Source path escaped the approved project.');
     }
     if (await realpath(root) !== root || await realpath(file) !== file) fail('Source identity changed.');
-    const stat = await lstat(file);
-    if (!stat.isFile() || stat.size > 64 * 1024) fail('Source must be a regular file no larger than 64 KiB.');
-    const bytes = await readFile(file);
-    if (bytes.length > 64 * 1024) fail('Source grew beyond its approved bound.');
+    checkReadBound(await lstat(file), limit);
+    const handle = await open(file, 'r');
+    let bytes, stat;
+    try {
+      stat = await handle.stat();
+      checkReadBound(stat, limit);
+      const buffer = Buffer.alloc(stat.size + 1);
+      let count = 0;
+      while (count < buffer.length) {
+        const { bytesRead } = await handle.read(buffer, count, buffer.length - count, count);
+        if (!bytesRead) break;
+        count += bytesRead;
+      }
+      if (count !== stat.size) fail('Source size changed while reading.');
+      bytes = buffer.subarray(0, count);
+    } finally {
+      await handle.close();
+    }
     const content = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
     return { file, content, mode: stat.mode, summary: { ...record, bytes: bytes.length, sha256: hash(bytes) } };
   }
@@ -50,10 +74,17 @@ export async function loadProject(path = process.env.ISAIAH_PROJECT_PROFILE) {
     if (key !== undefined && !records.has(key)) fail('Source record is outside the approved project.');
     const files = []; let selected;
     for (const record of records.values()) {
-      const value = await read(record); files.push(value.summary);
+      const limit = capabilityRecord(record) && record.key !== key ? capabilityLimit : sourceLimit;
+      const value = await read(record, limit); files.push(value.summary);
       if (record.key === key) selected = { key, content: value.content, sha256: value.summary.sha256 };
     }
     return { kind: 'project-map.v1', id: profile.id, rootIdentity: identity, configuredTarget:profile.target?{...profile.target}:null, permissions: { read: true, propose: true, apply: !!profile.allowApply, design: !!profile.allowDesign }, files, ...(selected ? { selected } : {}) };
+  }
+  async function readCapability(key) {
+    const record = records.get(key);
+    if (!record) fail('Source record is outside the approved project.');
+    const value = await read(record, capabilityRecord(record) ? capabilityLimit : sourceLimit);
+    return { key, content:value.content, sha256:value.summary.sha256 };
   }
   let busy = false;
   async function replace(change, commit) {
@@ -75,7 +106,7 @@ export async function loadProject(path = process.env.ISAIAH_PROJECT_PROFILE) {
       // Keep accepted-revision selection and the final bounded file replacement in one ledger lock.
       commit(() => {
         const stat = lstatSync(current.file);
-        if (realpathSync(current.file) !== current.file || stat.isSymbolicLink() || stat.size > 64 * 1024 || hash(readFileSync(current.file)) !== change.before) fail('Source changed before replacement.');
+        if (realpathSync(current.file) !== current.file || stat.isSymbolicLink() || stat.size > sourceLimit || hash(readFileSync(current.file)) !== change.before) fail('Source changed before replacement.');
         renameSync(temporary, current.file);
       });
       temporary = undefined;
@@ -86,7 +117,7 @@ export async function loadProject(path = process.env.ISAIAH_PROJECT_PROFILE) {
       busy = false;
     }
   }
-  return { id: profile.id, scope: 'project-v1/' + identity, snapshot, replace };
+  return { id: profile.id, scope: 'project-v1/' + identity, snapshot, readCapability, replace };
 }
 
 export function projectFacts(snapshot) {

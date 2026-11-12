@@ -1,4 +1,4 @@
-# ISAIAH 0.1.1
+# ISAIAH 0.2.0
 
 <p align="center">
   <a href="#start"><strong>Docker Quick Start</strong></a> &nbsp;·&nbsp;
@@ -16,11 +16,23 @@
 
 **Developer / Teacher / Engineer** describes the direction. The developer preview supports scoped source inspection, reviewed patches and one constrained HL7-to-FHIR example. Teaching connects retained observations to InterSystems concepts through the CLI and service. Main browser teaching remains gated. [Developer workflow](docs/developer-workflow.md) · [Contest task](https://openexchange.intersystems.com/contest/49)
 
-**Try it:** [requirements](#supported-environment) → [acquire dependencies](#acquire-the-dependencies) → [start](#start) → open **http://127.0.0.1:18757/** and [run R17, then R29](#demonstrate-the-native-workflow). [Inspect the source](#inspect-the-implementation) or [run the offline checks](#offline-checks).
+**Try it:** [Open the browser simulation](https://kennethjsmithdev.github.io/ISAIAH/) to explore R17 and R29 without installing anything. The simulation uses authored examples. For a native run, follow [requirements](#supported-environment) → [acquire dependencies](#acquire-the-dependencies) → [start](#start) → open **http://127.0.0.1:18757/** and [run R17, then R29](#demonstrate-the-native-workflow). [Inspect the source](#inspect-the-implementation) or [run the offline checks](#offline-checks).
 
 **Provisional demonstration edit — genuine recorded synthetic workflow. Manually recorded presentation footage is planned.**
 
 Download the captioned 30-second R17/R29 recording (3.2 MiB). [WebM](docs/media/isaiah-judge-demo.webm) · [Recording notes](#recorded-demonstration)
+
+## What is new in 0.2.0
+
+- **Inspect contracts before building.** Export OpenAPI 3.1 for the read and search operations advertised in approved FHIR R4, R4B, or R5 CapabilityStatements. Compare a component's declared message types with those recorded in an approved trace.
+- **Review a synthetic HL7-to-FHIR mapping before deployment.** Ask native AI Hub to propose test inputs. ISAIAH derives the expected results from the fixed fixture contract. Export a reviewable Organization application and test from a versioned interface spec.
+- **Understand the evidence in the CLI.** Coach, Focus, and Companion present the same retained facts and explain the difference between an advertised operation and an observed response.
+
+[Developer workflow and CLI examples](docs/developer-workflow.md#propose-a-synthetic-mapping-test)
+
+### Community Idea: FHIR to OpenAPI
+
+ISAIAH implements the read and search export slice of [DPI-I-804](https://ideas.intersystems.com/ideas/DPI-I-804) with its own converter. Supply an approved local FHIR R4, R4B, or R5 CapabilityStatement to generate OpenAPI 3.1 JSON. Try the [three-release walkthrough](docs/fhir-openapi.md) to export the documents and see which operations ISAIAH leaves out.
 
 ## Why ISAIAH Is Different
 
@@ -44,6 +56,7 @@ The links below identify the implementation in this source tree. The R29 human-w
 | What independently checks the result? | [verify and verifyReplay](verifier.mjs) · [IRIS verification endpoint](iris/cls/Isaiah/Api.cls) |
 | Where are approval, apply, rollback and recovery enforced? | [Change plan/action processing](iris/cls/Isaiah/Change.cls) · [Approve and Execute](iris/cls/Isaiah/Change.cls) · [Reconcile](iris/cls/Isaiah/Change.cls) |
 | Where is reviewed learning implemented? | [SQLite transaction, comparison and review](standalone/ledger.mjs) · [Trace selection, verification and persistence](standalone/developer.mjs) |
+| Where are the new developer tools? | [Test emitter](standalone/organization-test-emitter.mjs) · [OpenAPI exporter](standalone/fhir-openapi.mjs) · [Message-type inspector](standalone/message-types.mjs) · [Interface generator](standalone/interface-spec.mjs) |
 | How can I reproduce the cases? | [Synthetic fixtures](iris/cls/Isaiah/Fixture.cls) · [Two-case live check](docker/check.ps1) · [Approval regression](docker/check-apply.mjs) |
 
 [Provider selection](provider-profiles.mjs), the [ChatGPT account bridge](chatgpt/bridge.mjs), and the [read-only MCP tool](iris/cls/Isaiah/TraceMCPTools.cls) extend that same path; they do not replace the agent or verifier.
@@ -87,9 +100,13 @@ Open `http://127.0.0.1:8765/` for the interactive demo or `http://127.0.0.1:8765
 
 Retained Health Build 154U qualification covers native R17/R29, independent verification, approved trace access and guarded apply/rollback. The source-read tool and constrained developer example have separate qualification records. [Qualification scope](docs/qualification.md) · [Developer preview](docs/qualification.md#developer-preview-qualification)
 
-The earlier **0.1.1 native IPM archive** passed a clean offline installation on Health Build 154U using all 26 package inputs at `61e6676`. The Interoperability guard refused installation before class loading when Interoperability was disabled. With it enabled, R17 delivered to Standard and R29 recorded Express unavailable followed by Standard fallback. The separate offline deterministic verifier suite passed all three tests. Archive SHA-256 `e14bc43e27e5ee780ea44b38a1930acf33fd9a49e2c466560e5f2ddbdf564036`. [Qualification history](docs/qualification.md#qualification-history)
+The published baseline's **0.1.1 native IPM archive** passed a clean offline installation on Health Build 154U using all 26 package inputs at `61e6676`. The Interoperability guard refused installation before class loading when Interoperability was disabled. With it enabled, R17 delivered to Standard and R29 recorded Express unavailable followed by Standard fallback. The separate offline deterministic verifier suite passed all three tests. Archive SHA-256 `e14bc43e27e5ee780ea44b38a1930acf33fd9a49e2c466560e5f2ddbdf564036`. [Qualification history](docs/qualification.md#qualification-history)
 
-A complete fresh installation of the current Node, browser and model system and general existing-installation upgrades remain separately unqualified. The public registry installation recorded below covers **0.1.0**. [IPM install](#ipm)
+The **0.2.0 native IPM archive** passed a fresh offline installation on the same Health build. The Interoperability guard, deterministic R17/R29 routing, and scoped trace checks passed. Archive SHA-256: `3798ff1d272847a6b1882e28b5c71dbcbdc6ab979a41a33f4662d70f60104d7f`. The Node 24.21.0 archive also passed a separate clean install and approved FHIR R4, R4B, and R5 export fixtures. The offline suite passed 44 tests with two optional Hermes checks skipped.
+
+The reviewed receiving-facility mapping delivered a synthetic R5 Organization in a disposable native production. An independent read and search confirmed the resource. A blank receiving facility produced no resource, and the mapping test rejected an incorrect identifier. The direct CLI reader also passed R4, R4B, and R5 against a controlled local FHIR test server. A separate Health Build 154U run qualified generated production delivery and recovery against loopback HAPI R4, R4B, and R5 fixtures. The legacy authenticated native R5 route passed separately. [Generated destination setup and limits](docs/developer-workflow.md#configure-a-disposable-fhir-destination)
+
+A clean Compose installation passed on a host with the approved dependencies available, including service health, preflight, and model discovery without inference. Fresh-machine setup, new model-assisted end-to-end execution, and general existing-installation upgrades remain unqualified. A targeted offline IPM upgrade from the retained public **0.1.0** artifact to the exact **0.2.0** archive passed on Health Build 154U, preserving the synthetic fixture state and message history. The public registry installation recorded below covers **0.1.0**. [IPM install](#ipm)
 
 ![R17 result from genuine native AI Hub execution in the synthetic ISAIAH interface](docs/media/isaiah-r17.png)
 
@@ -97,7 +114,7 @@ The screenshot is the genuine native R17 capture from the earlier v0.1.0 layout,
 
 ## Navigate
 
-[Environment](#supported-environment) · [Dependencies](#acquire-the-dependencies) · [Startup](#start) · [R17/R29 demonstration](#demonstrate-the-native-workflow) · [Trace and learning](#approved-trace-and-truthful-learning) · [Apply/rollback](#synthetic-r17-apply-and-rollback) · [IPM](#ipm) · [Checks](#offline-checks) · [Shutdown](#shutdown) · [Limits](#limits) · [License](#license-and-dependencies)
+[Environment](#supported-environment) · [Dependencies](#acquire-the-dependencies) · [Startup](#start) · [R17/R29 demonstration](#demonstrate-the-native-workflow) · [0.2.0 developer tools](#what-is-new-in-020) · [Trace and learning](#approved-trace-and-truthful-learning) · [Apply/rollback](#synthetic-r17-apply-and-rollback) · [IPM](#ipm) · [Checks](#offline-checks) · [Shutdown](#shutdown) · [Limits](#limits) · [License](#license-and-dependencies)
 
 ## Supported environment
 
@@ -273,9 +290,9 @@ This mutation capability covers one synthetic setting and one local operator key
 
 ## IPM
 
-Root `module.xml` packages `Isaiah.PKG` from `iris/` as `isaiah` version 0.2.0. The exact native archive passed clean offline installation and an in-place upgrade from the retained public 0.1.0 package on Health Build 154U. This result covers the synthetic production and its retained message history. It requires IRIS 2026.3 or later with Interoperability enabled. The documented Compose setup provisions the synthetic namespaces and loads an absent module through IPM.
+Root `module.xml` packages `Isaiah.PKG` from `iris/` as `isaiah` version 0.2.0. It requires IRIS 2026.3 or later with Interoperability enabled. The documented Compose setup provisions the synthetic namespaces and loads an absent module through IPM.
 
-The registry command is `zpm "install isaiah"`; as checked November 10, 2026, it installed **0.1.0**. Check the registry metadata for the currently served version. A fresh Health Build154U / IPM 0.10.10 client installed that public package and reproduced both deterministic fixture routes without model calls. IPM 0.9+ does not enable the community registry by default. If needed, an administrator can configure it in the intended disposable namespace using `zpm "repo -r -n registry -url https://pm.community.intersystems.com/"`; see the [pinned IPM instructions](https://github.com/intersystems/ipm/blob/v0.10.10/README.md). This changes the client's repository configuration, not ISAIAH's version.
+The registry command is `zpm "install isaiah"`; as checked November 10, 2026, it installs **0.1.0**, not this 0.2.0 source. A fresh Health Build154U / IPM 0.10.10 client installed that public package and reproduced both deterministic fixture routes without model calls. IPM 0.9+ does not enable the community registry by default. If needed, an administrator can configure it in the intended disposable namespace using `zpm "repo -r -n registry -url https://pm.community.intersystems.com/"`; see the [pinned IPM instructions](https://github.com/intersystems/ipm/blob/v0.10.10/README.md). This changes the client's repository configuration, not ISAIAH's version.
 
 An administrator can instead load the current source using IPM 0.10.10 in an authorized Interoperability-enabled namespace.
 
@@ -283,7 +300,7 @@ An administrator can instead load the current source using IPM 0.10.10 in an aut
 zpm "load /path/to/ISAIAH -nodev"
 ~~~
 
-Module loading installs classes. Permissions, accounts, provider credentials and production startup remain separate administrator responsibilities. Compose provisions its disposable targets. The [public IPM registry](https://pm.community.intersystems.com/packages/isaiah) is the authority for the publicly installable version. Use the source-load or Compose route subject to the qualification limits and migration warning. The complete browser/model demonstration uses the Compose setup above.
+Module loading installs classes. Permissions, accounts, provider credentials and production startup remain separate administrator responsibilities. Compose provisions its disposable targets. The [public IPM registry](https://pm.community.intersystems.com/packages/isaiah) lists only 0.1.0, and the 0.1.1 archive endpoint returned 404 on the date above. Use the source-load or Compose route for this 0.2.0 source candidate, subject to its stated qualification limits and migration warning. The complete browser/model demonstration uses the Compose setup above.
 
 ## Offline checks
 

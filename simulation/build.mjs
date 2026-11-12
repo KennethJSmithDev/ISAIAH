@@ -9,7 +9,7 @@ let html = await readFile('web/index.html', 'utf8');
 html = html.replace('<title>ISAIAH | Investigation workspace</title>', '<title>ISAIAH | Offline simulation</title>');
 html = html.replace('<script type="module" src="./app.js"></script>', '<script type="module" src="./app.js"></script>\n  <script type="module" src="./teaching.js"></script>');
 html = html.replace('INTEROPERABILITY / INVESTIGATION', 'OFFLINE SIMULATION · NO LIVE IRIS OR MODEL');
-html = html.replace('v0.1.1 candidate', 'SIMULATION ONLY');
+html = html.replace('v0.2.0 candidate', 'SIMULATION ONLY');
 html = html.replace(/<p id="chatgpt-settings"[^>]*>[\s\S]*?<\/p>/, '');
 html = html.replace('Follow the message. Inspect the agent\'s recommendation. Check what the production records actually prove.', 'Explore authored synthetic examples. No agent, verifier, IRIS production, real approval, or delivery runs in this simulation.');
 html = html.replace('<button type="button" data-view="learning" aria-pressed="false">Learning review</button>', '<button type="button" data-view="learning" aria-pressed="false">Learning review</button>\n    <button type="button" data-view="teaching" aria-pressed="false">Teaching example</button>');

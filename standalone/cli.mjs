@@ -29,6 +29,10 @@ const usage = `ISAIAH standalone developer harness
   isaiah context <accept|restore> <revision>
   isaiah project map
   isaiah project design --objective <synthetic-HL7-to-FHIR-task>
+    isaiah project test-propose --objective <synthetic-HL7-to-FHIR-test>
+    isaiah project fhir-openapi --record <approved-R4-R4B-or-R5-CapabilityStatement-key>
+    isaiah project component-types --record <component-source-key> --trace-record <approved-trace-key> --component <name>
+    isaiah project interface-plan --record <approved-synthetic-interface-spec-key>
   isaiah project export <retained-plan-run> --output <new-directory>
   isaiah project read --record <approved-key>
   isaiah project context <propose|accept|restore> <run-or-revision>
@@ -59,7 +63,8 @@ try {
     session: { type: 'string' }, topic: { type: 'string' }, question: { type: 'string' }, live: { type: 'boolean' },
     target: { type: 'string' }, record: { type: 'string' }, model: { type: 'string' },
     profile: { type: 'string' }, port: { type: 'string' }, compose: { type: 'boolean' }, run: {type:'string'},
-    'account-name': {type:'string'}, 'account-origin': {type:'string'}, replacement: {type:'string'}, objective: {type:'string'}, output: {type:'string'}
+      'account-name': {type:'string'}, 'account-origin': {type:'string'}, replacement: {type:'string'}, objective: {type:'string'}, output: {type:'string'},
+      'trace-record': {type:'string'}, component: {type:'string'}
   } });
   const [action, id] = positionals;
   if (!command || command === '--help' || command === 'help') console.log(usage);
@@ -74,8 +79,11 @@ try {
   else if (command === 'project') {
     let input;
     if (action === 'map' && args.length === 1) input = { operation: 'map' };
-    else if (action === 'design' && positionals.length === 1 && values.objective && Object.keys(values).length === 1) input = { operation:'design', objective:values.objective };
-    else if (action === 'read' && positionals.length === 1 && values.record && Object.keys(values).length === 1) input = { operation: 'read', key: values.record };
+    else if (['design','test-propose'].includes(action) && positionals.length === 1 && values.objective && Object.keys(values).length === 1) input = { operation:action, objective:values.objective };
+    else if (['read','fhir-openapi','interface-plan'].includes(action) && positionals.length === 1 && values.record && Object.keys(values).length === 1) input = { operation:action, key: values.record };
+    else if (action === 'component-types' && positionals.length === 1 && values.record && values['trace-record'] && values.component && Object.keys(values).length === 3) {
+      input = { operation:action, key:values.record, traceKey:values['trace-record'], component:values.component };
+    }
     else if (action === 'context' && ['propose','accept','restore'].includes(id) && positionals.length === 3 && !Object.keys(values).length) {
       input = { operation: 'context-' + id, ...(id === 'propose' ? { runId: positionals[2] } : { revision: positionals[2] }) };
     } else if (action === 'patch' && id === 'propose' && positionals.length === 2 && values.record && values.replacement && Object.keys(values).length === 2) {
