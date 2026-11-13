@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Require completed ISAIAH provisioning while preserving native IRIS health.
+set -euo pipefail
+base=$(cd -- "$(dirname -- "$0")" && pwd)
+work=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/isaiah-readiness.XXXXXX")
+trap 'rm -f -- "$work/resources.yaml" "$work/kustomization.yaml" "$work/readiness.jsonpatch"; rmdir -- "$work"' EXIT
+cat > "$work/resources.yaml"
+cp -- "$base/readiness.jsonpatch" "$work/readiness.jsonpatch"
+cat > "$work/kustomization.yaml" <<'PATCH'
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: [resources.yaml]
+# A replacement source must identify exactly one object; JSON patch selectors alone may skip it.
+replacements:
+  - source:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      name: isaiah-iris-app
+      fieldPath: metadata.name
+    targets:
+      - select:
+          group: apps
+          version: v1
+          kind: StatefulSet
+          name: isaiah-iris-app
+        fieldPaths: [metadata.name]
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      name: isaiah-iris-app
+    path: readiness.jsonpatch
+PATCH
+kubectl kustomize "$work"

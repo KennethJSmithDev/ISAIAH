@@ -1,0 +1,25 @@
+[
+  {
+    "op": "test",
+    "path": "/spec/template/spec/containers/0/name",
+    "value": "iris-app"
+  },
+  {
+    "op": "test",
+    "path": "/spec/template/spec/containers/0/readinessProbe/exec/command",
+    "value": [
+      "bash",
+      "-c",
+      "if [ -f $ISC_PACKAGE_INSTALLDIR/dev/Container/waitReady.sh ]; then\n  $ISC_PACKAGE_INSTALLDIR/dev/Container/waitReady.sh\nelse\n  $ISC_PACKAGE_INSTALLDIR/dev/Cloud/ICM/waitISC.sh\nfi\n"
+    ]
+  },
+  {
+    "op": "replace",
+    "path": "/spec/template/spec/containers/0/readinessProbe/exec/command",
+    "value": [
+      "bash",
+      "-c",
+      "test -f /tmp/isaiah-private/ready || exit 1\nif [ -f $ISC_PACKAGE_INSTALLDIR/dev/Container/waitReady.sh ]; then\n  $ISC_PACKAGE_INSTALLDIR/dev/Container/waitReady.sh\nelse\n  $ISC_PACKAGE_INSTALLDIR/dev/Cloud/ICM/waitISC.sh\nfi\n"
+    ]
+  }
+]
